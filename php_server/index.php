@@ -70,8 +70,9 @@ function handleQueryRequest($query) {
 
     global $success;
     if(!$success) {
-        $result = array();
-        array_push($result, "test", "fail");
+        $result = array(
+            "result" => "Invalid Query",
+        );
         echo json_encode($result);
         return;
     }
