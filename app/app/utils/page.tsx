@@ -1,20 +1,44 @@
-export const runtime = 'nodejs'
+export const runtime = "nodejs";
 
 const express = require("express");
 const cors = require("cors");
+const oracledb = require("oracledb");
 const app = express();
-app.use(cors());
+app.use(cors()); 
 
 const PORT = 8080;
 
-app.get("/api/home", (req: any, res: any) => {
-  res.send({ message: "Welcome to the Home Page!" });
-});
+// app.get("/api/home", (req: any, res: any) => {
+//   res.send({ message: "Welcome to the Home Page!" });
+// });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server listening on ${PORT}`);
+// });
 
+async function runApp() {
+  console.log('ran runapp')
+  let connection;
+  try {
+    connection = await oracledb.getConnection({
+      user: "ora_afahimi",
+      password: "a13006549",
+      connectionString: "dbhost.students.cs.ubc.ca:1522/stu",
+    });
+    console.log("Successfully connected to Oracle Database"); // Create a table
+  } catch (err) {
+    console.error(err);
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+}
+runApp();
 
 const API = () => {
   return (

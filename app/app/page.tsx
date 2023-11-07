@@ -1,20 +1,56 @@
 "use client";
-import Image from "next/image";
+import styles from "./Home.module.css";
+import Head from "next/head";
+import { Roboto } from "next/font/google";
+import { useState } from "react";
+import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
 
-const getRequest = async () => {
-  await fetch("http://localhost:3000/utils")
-  await fetch("http://localhost:8080/api/home")
-    .then((res) => res.json())
-    .then((data) => console.log(data));
-}
-
+const roboto = Roboto({
+  weight: "400",
+  subsets: ["latin"],
+});
 
 const Home = () => {
+  const [query, setQuery] = useState("");
+
+  const postRequest = async () => {
+    console.log("query: " + query)
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: query })
+    };
+    console.log("sending post request");
+    await fetch("https://www.students.cs.ubc.ca/~afahimi/index.php", requestOptions)
+      .then((res) => res.json())
+      .then((data) => console.log(data))
+      .catch((error) => console.error('Error:', error));
+  };
+
   return (
-    <div>
-      <h1>Amin</h1>
-      <button onClick={getRequest}>Click</button>
-    </div>
+    <>
+      <div className={styles.container}>
+        <h1 className={styles.title}>RPG Database Query</h1>
+        <div className={styles.form}>
+          <Form>
+            <Form.Group>
+              <Form.Control
+                type="text"
+                placeholder="Enter query"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </div>
+        <Button onClick={postRequest} variant="outline-primary">
+          Execute Query
+        </Button>
+      </div>
+    </>
   );
 };
 
