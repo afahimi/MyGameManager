@@ -68,43 +68,28 @@ function handleQueryRequest($query) {
 
     $statement = executePlainSQL($query);
 
-    $result = array(
-        "test" => "Received content",
-        "content" => $query
-    );
-    echo json_encode($result);
+    global $success;
+    if(!$success) {
+        $result = array();
+        array_push($result, "test", "fail");
+        echo json_encode($result);
+        return;
+    }
 
-    // $result = array();
-    // array_push($result, "test", $query);
-    // echo json_encode($result);
+    $data = array();
+    while ($row = oci_fetch_assoc($statement)) {
+        array_push($data, $row);
+    }
 
-    // global $success;
-    // if(!$success) {
-    //     $result = array();
-    //     array_push($result, "test", "fail");
-    //     echo json_encode($result);
-    //     return;
-    // }
-
-    // $data = array();
-    // while ($row = oci_fetch_assoc($statement)) {
-    //     array_push($data, $row);
-    // }
-
-    // oci_free_statement($statement);
-    // header('Content-Type: application/json');
-    // echo json_encode($data);
+    oci_free_statement($statement);
+    header('Content-Type: application/json');
+    echo json_encode($data);
 }
 
 connectToDB();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = file_get_contents("php://input");
     $decodedContent = json_decode($content, true);
-    handleQueryRequest($decodedcontent[$query]);
-    // $result = array(
-    //     "test" => "Received content",
-    //     "content" => $decodedContent["query"]
-    // );
-    // echo json_encode($result);
+    handleQueryRequest((string)$decodedContent["query"]);
 }
 disconnectFromDB();

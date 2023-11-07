@@ -33,7 +33,7 @@ const Home = () => {
   return (
     <>
       <div className={styles.container}>
-        <h1 className={styles.title}>RPG Database Query</h1>
+        <h1 className={styles.title}>Database Query</h1>
         <div className={styles.form}>
           <Form>
             <Form.Group>
