@@ -50,7 +50,6 @@ function executePlainSQL($cmdstr) { //takes a plain (no bound variables) SQL com
 
     if (!$statement) {
         $e = OCI_Error($db_conn); // For OCIParse errors pass the connection handle
-        echo htmlentities($e['message']);
         $success = False;
     }
 
@@ -70,9 +69,11 @@ function handleQueryRequest($query) {
 
     global $success;
     if(!$success) {
-        $result = array(
+        $result = array();
+        $contents = array(
             "result" => "Invalid Query",
         );
+        array_push($result, $contents);
         echo json_encode($result);
         return;
     }
