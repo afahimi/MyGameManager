@@ -1,36 +1,42 @@
 import Table from "react-bootstrap/Table";
 
-const DataTable = () => {
-    return (
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Username</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>Mark</td>
-              <td>Otto</td>
-              <td>@mdo</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>Jacob</td>
-              <td>Thornton</td>
-              <td>@fat</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td colSpan={2}>Larry the Bird</td>
-              <td>@twitter</td>
-            </tr>
-          </tbody>
-        </Table>
-    );
+interface DataTableProps {
+  data: string;
+}
+
+const DataTable = (data: DataTableProps) => {
+  
+  const keys = Object.keys(data["data"][0]);
+
+  const populateTable = () => {
+    const result = [];
+    for (let i = 0; i < data["data"].length; i++) {
+      let values = Object.values(data["data"][i]);
+      let items = [];
+      for (let j = 0; j < values.length; j++) {
+        items.push(<td>{values[j]}</td>);
+      }
+      result.push(items);
+    }
+    return result.map((obj, index) => {
+      return <tr key={index}>{...obj}</tr>;
+    });
+  };
+
+
+  return (
+    <Table striped bordered hover>
+      <thead>
+        <tr>
+          {keys.map((obj, index) => {
+            return <th key={index}>{obj}</th>;
+          })}
+        </tr>
+      </thead>
+      <tbody>
+        {populateTable()}
+      </tbody>
+    </Table>
+  );
 };
 export default DataTable;

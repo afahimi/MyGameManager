@@ -12,8 +12,11 @@ const roboto = Roboto({
   subsets: ["latin"],
 });
 
+type RecordType = Record<string, string>;
+
 const Home = () => {
   const [query, setQuery] = useState("");
+  const [result, setResult] = useState("");
 
   const postRequest = async () => {
     console.log("query: " + query);
@@ -30,7 +33,10 @@ const Home = () => {
       requestOptions
     )
       .then((res) => res.json())
-      .then((data) => console.log(data))
+      .then((data) => {
+        console.log(data);
+        setResult(data);
+      })
       .catch((error) => console.error("Error:", error));
   };
 
@@ -54,7 +60,7 @@ const Home = () => {
           Execute Query
         </Button>
         <div className={styles.table}>
-          <DataTable />
+          {result && <DataTable data={result} />}
         </div>
       </div>
     </>
