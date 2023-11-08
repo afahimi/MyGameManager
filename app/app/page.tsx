@@ -16,7 +16,7 @@ type RecordType = Record<string, string>;
 
 const Home = () => {
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState([]);
 
   const postRequest = async () => {
     console.log("query: " + query);
