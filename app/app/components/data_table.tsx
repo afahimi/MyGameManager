@@ -7,7 +7,15 @@ interface DataTableProps {
 const DataTable = ({data}: DataTableProps) => {
 
   if (!data || data.length === 0) {
-    return null;
+    return (
+    <Table striped bordered hover>
+      <thead>
+        <tr>
+          <th>No results</th>
+        </tr>
+      </thead>
+    </Table>
+    );
   }
 
   const keys = Object.keys(data[0]);
