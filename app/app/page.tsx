@@ -6,6 +6,7 @@ import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import DataTable from "./components/data_table";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
 
 const roboto = Roboto({
   weight: "400",
@@ -44,6 +45,17 @@ const Home = () => {
     <>
       <div className={styles.container}>
         <h1 className={styles.title}>Database Query</h1>
+        <div className={styles.btn_group}>
+          <ButtonGroup aria-label="Basic example">
+            <Button variant="outline-primary">INSERT</Button>
+            <Button variant="outline-primary">DELETE</Button>
+            <Button variant="outline-primary">UPDATE</Button>
+            <Button variant="outline-primary">SELECT</Button>
+            <Button variant="outline-primary">PROJECT</Button>
+            <Button variant="outline-primary">JOIN</Button>
+            <Button variant="outline-primary">AGGREGATION</Button>
+          </ButtonGroup>
+        </div>
         <div className={styles.form}>
           <Form>
             <Form.Group>
