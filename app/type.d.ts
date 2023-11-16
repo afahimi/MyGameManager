@@ -1,0 +1,3 @@
+interface tableState {
+    selectedTable: string
+}

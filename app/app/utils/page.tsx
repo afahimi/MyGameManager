@@ -16,6 +16,7 @@ const PORT = 8080;
 //   console.log(`Server listening on ${PORT}`);
 // });
 
+
 async function runApp() {
   console.log('ran runapp')
   let connection;
@@ -29,7 +30,7 @@ async function runApp() {
   } catch (err) {
     console.error(err);
   } finally {
-    if (connection) {
+    if (connection) { 
       try {
         await connection.close();
       } catch (err) {
