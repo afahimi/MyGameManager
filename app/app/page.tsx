@@ -1,6 +1,6 @@
 "use client";
 import styles from "./Home.module.css";
-import Head from "next/head";
+import Head, { defaultHead } from "next/head";
 import { Roboto } from "next/font/google";
 import { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
@@ -23,27 +23,30 @@ const roboto = Roboto({
 type RecordType = Record<string, string>;
 
 const Home = () => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<Record<string, string>>({});
+  const [executeQuery, setExecuteQuery] = useState<string>("");
+  const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
   const [sideMenuVisible, setSideMenuVisible] = useState("true")
   const [tableNames, setTableNames] = useState([])
   const [insertBox, setInsertBox] = useState(false);
   const [curTableName, setCurTableName] = useState("")
   const [insertElements, setInsertElements] = useState<string[]>([])
+  const [operation, setOperation] = useState<string>("")
 
   // BROKEN -- trying to use redux
   // const table : any = useAppSelector((state : any) => {state.table})
   // useAppDispatch()
   // console.log("TABLE: ", table)
 
-  const elements = {
-    "CHARACTERINFO" : ["CHARACTERID", "COORDINATES", "HEALTH", "OVERALLLEVEL", "MANA", "CHARACTERNAME"],
+  const elements: Record<string, string[]> = {
+    "CharacterInfo" : ["CharacterID", "COORDINATES", "HEALTH", "OVERALLLEVEL", "MANA", "CHARACTERNAME"],
     "CONTAINS" : ["INVENRORYID", "ITEMID", "INVENTORYQUANTITY"],
     "COORDINATELOCATIONS" : ["COORDINATES","LOCATIONNAME"],
     "DEVELOPS" : ["SKILLNAME", "CHARACTERID", "Level"],
     "FACTIONS" : ["FACTIONNAME", "FACTIONTPYE"],
     "INTERACTIONS" : ["PLAYERCHARACTERID", "NONPLAYABLECHARACTERID", "INTERACTIONTIME", "INTERACTIONTYPE"],
-    "INVENTORY" : ["INVENORYID", "PLAYABLECHARACTERID", "INVENTORYSIZE"],
+    "INVENTORY" : ["INVENTORYID", "PLAYABLECHARACTERID", "INVENTORYSIZE"],
     "ITEM" : ["ITEMID", "ITEMNAME"],
     "LOCATION" : ["LOCATIONNAME", "LOCATIONTYPE"],
     "MEMBEROF" : ["CHARACTERID", "FACTIONNAME"],
@@ -55,6 +58,8 @@ const Home = () => {
     "YIELDSQUEST" : ["QUESTID", "PLAYABLECHARACTERID", "NONPLAYABLECHARACTERID", "INTERACTIONTIME", "QUESTLEVEL"],
   }
 
+  const operations = ["INSERT", "DELETE", "UPDATE", "SELECT", "PROJECT", "JOIN", "AGGREGATION"]
+
   type elementKey = keyof typeof elements;
 
   const handleTableSelection = (tableName : elementKey) => {
@@ -65,6 +70,24 @@ const Home = () => {
       setInsertElements([]);
     }
   };
+
+  const handleInputChange = (fieldName : string , value : string) => {
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      [fieldName]: value
+    }));
+  };
+
+  const handleExecuteQuery = () => {
+    switch (operation) {
+      case "INSERT":
+        const entities = elements[curTableName];
+        const joinedValues = Object.values(query).map(entity => `'${entity}'`).join(", ");
+        const insertQuery = `INSERT INTO ${curTableName} (${entities.join(", ")}) VALUES (${joinedValues});`;
+        postRequest(insertQuery);
+        break;
+    }
+  }
 
 
   useEffect(() => {
@@ -87,19 +110,16 @@ const Home = () => {
       console.error("ERROR: ", err)
 
     }
-    
-
-
   }
 
-  const postRequest = async () => {
-    console.log("query: " + query);
+  const postRequest = async (insertQuery : string) => {
+    console.log("query: " + insertQuery);
     const requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query: query }),
+      body: JSON.stringify({ executeQuery: insertQuery}),
     };
     console.log("sending post request");
     await fetch(
@@ -147,7 +167,11 @@ const Home = () => {
               <ButtonGroup aria-label="Basic example">
                 <Button 
                   variant="outline-primary"
-                  onClick = {() => setInsertBox(!insertBox)}
+                  onClick = {() => {
+                      setInsertBox(!insertBox) 
+                      setOperation(insertBox ? "" : "INSERT")
+                  }
+                }
                   >INSERT</Button>
                 <Button variant="outline-primary">DELETE</Button>
                 <Button variant="outline-primary">UPDATE</Button>
@@ -167,8 +191,8 @@ const Home = () => {
                           key = {count}
                           type="text"
                           placeholder={element}
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
+                          value={query[element]}
+                          onChange={(e) => handleInputChange(element, e.target.value)}
                         />
                         );
                       })}
@@ -177,14 +201,14 @@ const Home = () => {
                       <Form.Control
                       type="text"
                       placeholder="Enter query"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
+                      value={defaultQuery}
+                      onChange={(e) => setDefaultQuery(e.target.value)}
                     />
                     )}
                 </Form.Group>
               </Form>
             </div>
-            <Button onClick={postRequest} variant="outline-primary">
+            <Button onClick={handleExecuteQuery} variant="outline-primary">
               Execute Query
             </Button>
             <div className={styles.table}>

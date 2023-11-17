@@ -236,3 +236,4 @@ INSERT INTO QuestRewards (QuestID, RewardQuantity) VALUES (112, 1);
 INSERT INTO QuestRewards (QuestID, RewardQuantity) VALUES (312, 5);
 INSERT INTO QuestRewards (QuestID, RewardQuantity) VALUES (12, 1);
 INSERT INTO QuestRewards (QuestID, RewardQuantity) VALUES (99, 3);
+
