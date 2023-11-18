@@ -7,13 +7,14 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import DataTable from "./components/data_table";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import ListGroup from 'react-bootstrap/ListGroup';
+import ListGroup from "react-bootstrap/ListGroup";
 
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
 import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { table } from "console";
+import { OracleServerRequest } from "./utils/functions.ts";
 
 const roboto = Roboto({
   weight: "400",
@@ -27,186 +28,161 @@ const Home = () => {
   const [executeQuery, setExecuteQuery] = useState<string>("");
   const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
-  const [sideMenuVisible, setSideMenuVisible] = useState("true")
-  const [tableNames, setTableNames] = useState([])
-  const [insertBox, setInsertBox] = useState(false);
-  const [curTableName, setCurTableName] = useState("")
-  const [insertElements, setInsertElements] = useState<string[]>([])
-  const [operation, setOperation] = useState<string>("")
+  const [sideMenuVisible, setSideMenuVisible] = useState("true");
+  const [tableNames, setTableNames] = useState([]);
+  const [curTableName, setCurTableName] = useState("");
+  const [operation, setOperation] = useState<string>("");
 
   // BROKEN -- trying to use redux
   // const table : any = useAppSelector((state : any) => {state.table})
   // useAppDispatch()
   // console.log("TABLE: ", table)
 
-  const elements: Record<string, string[]> = {
-    "CharacterInfo" : ["CharacterID", "COORDINATES", "HEALTH", "OVERALLLEVEL", "MANA", "CHARACTERNAME"],
-    "CONTAINS" : ["INVENRORYID", "ITEMID", "INVENTORYQUANTITY"],
-    "COORDINATELOCATIONS" : ["COORDINATES","LOCATIONNAME"],
-    "DEVELOPS" : ["SKILLNAME", "CHARACTERID", "Level"],
-    "FACTIONS" : ["FACTIONNAME", "FACTIONTPYE"],
-    "INTERACTIONS" : ["PLAYERCHARACTERID", "NONPLAYABLECHARACTERID", "INTERACTIONTIME", "INTERACTIONTYPE"],
-    "INVENTORY" : ["INVENTORYID", "PLAYABLECHARACTERID", "INVENTORYSIZE"],
-    "ITEM" : ["ITEMID", "ITEMNAME"],
-    "LOCATION" : ["LOCATIONNAME", "LOCATIONTYPE"],
-    "MEMBEROF" : ["CHARACTERID", "FACTIONNAME"],
-    "NONPLAYABLECHARACTER" : ["CHARACTERID", "PERSONALITY"],
-    "PLAYER" : ["CHARACTERID", "INVENTORYID"],
-    "QUESTREWARDS" : ["QUESTID", "REWARDQUANTITY"],
-    "REWARDITEMS" : ["REWARDQUANTITY", "ITEMID"],
-    "SKILL" : ["SKILLNAME", "SKILLTYPE"],
-    "YIELDSQUEST" : ["QUESTID", "PLAYABLECHARACTERID", "NONPLAYABLECHARACTERID", "INTERACTIONTIME", "QUESTLEVEL"],
-  }
-
-  const operations = ["INSERT", "DELETE", "UPDATE", "SELECT", "PROJECT", "JOIN", "AGGREGATION"]
-
-  type elementKey = keyof typeof elements;
-
-  const handleTableSelection = (tableName : elementKey) => {
-    const info = elements[tableName];
-    if (info) {
-      setInsertElements(info);
-    } else {
-      setInsertElements([]);
-    }
-  };
-
-  const handleInputChange = (fieldName : string , value : string) => {
-    setQuery(prevQuery => ({
+  const operations = [
+    "INSERT",
+    "DELETE",
+    "UPDATE",
+    "SELECT",
+    "PROJECT",
+    "JOIN",
+    "AGGREGATION",
+  ];
+  /* Make all query boxes independent */
+  const handleInputChange = (fieldName: string, value: string) => {
+    console.log(defaultQuery);
+    setQuery((prevQuery) => ({
       ...prevQuery,
-      [fieldName]: value
+      [fieldName]: value,
     }));
   };
 
-  const handleExecuteQuery = () => {
+  /* Given the values generate a query to execute and toss it to postRequest */
+  const handleExecuteQuery = async () => {
     switch (operation) {
-      case "INSERT":
-        const entities = elements[curTableName];
-        const joinedValues = Object.values(query).map(entity => `'${entity}'`).join(", ");
-        const insertQuery = `INSERT INTO ${curTableName} (${entities.join(", ")}) VALUES (${joinedValues});`;
-        postRequest(insertQuery);
+      case "SELECT":
         break;
     }
-  }
-
+  };
 
   useEffect(() => {
     getAllTableNames()
-      .then((res:any) => {
-        console.log("success:", res)
-        setTableNames(res)
+      .then((res: any) => {
+        console.log("success:", res);
+        setTableNames(res);
       })
       .catch((err) => {
-        console.log(err)
-      })
-
-  }, [])
+        console.log(err);
+      });
+  }, []);
 
   async function setMainTable(table_name: string) {
+    setCurTableName(table_name);
     try {
-      let data : any = await getTableData(table_name)
-      setResult(data)
+      let data: any = await getTableData(table_name);
+      setResult(data);
     } catch (err) {
-      console.error("ERROR: ", err)
-
+      console.error("ERROR: ", err);
     }
   }
 
-  const postRequest = async (insertQuery : string) => {
-    console.log("query: " + insertQuery);
-    const requestOptions = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ executeQuery: insertQuery}),
-    };
-    console.log("sending post request");
-    await fetch(
-      "https://www.students.cs.ubc.ca/~afahimi/index.php",
-      requestOptions
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        setResult(data);
-      })
-      .catch((error) => console.error("Error:", error));
+  const createFormControlElements = () => {
+    if (result.length === 0) {
+      return null;
+    }
+
+    const keys = Object.keys(result[0]);
+
+    return keys.map((key, index) => {
+      return (
+        <Form.Control
+          key={index}
+          type="text"
+          placeholder={key}
+          onChange={(e) => handleInputChange(key, e.target.value)}
+        />
+      );
+    });
   };
 
+  interface OperationUI {
+    [key: string]: JSX.Element;
+  }  
 
+  const operationUI: OperationUI = {
+    "SELECT": (
+      <>
+        <Form>
+          <Form.Group>
+            <Form.Control
+              type="text"
+              placeholder="Enter query"
+              value={defaultQuery}
+              onChange={(e) => setDefaultQuery(e.target.value)}
+            />
+          </Form.Group>
+        </Form>
+      </>
+    ),
+
+    "INSERT": (
+      <>
+        <Form>
+          <Form.Group>{createFormControlElements()}</Form.Group>
+        </Form>
+      </>
+    ),
+  };
 
   return (
     <>
       <div className={styles.container}>
         <div className="flex h-full w-full">
           <div className="bg-slate-200 h-full mr-3">
-            <h1 className={`p-5 text-3xl font-onest text-slate-950 ${sideMenuVisible ? '' : "hidden"}`}>
-              Database Query 
+            <h1
+              className={`p-5 text-3xl font-onest text-slate-950 ${
+                sideMenuVisible ? "" : "hidden"
+              }`}
+            >
+              Database Query
             </h1>
             <ListGroup as={"ul"}>
-              {
-                tableNames.map((tableName:any, count) => {
-                  return (
-                  <ListGroup.Item key={count} as={"li"} className="mt-2" onClick={() => {
-                      setMainTable(tableName.TABLE_NAME)
-                      setCurTableName(tableName.TABLE_NAME)
-                      handleTableSelection(tableName.TABLE_NAME)}}>
-                      {tableName.TABLE_NAME}
-                  </ListGroup.Item>)
-                })
-              }
+              {tableNames.map((tableName: any, count) => {
+                return (
+                  <ListGroup.Item
+                    key={count}
+                    as={"li"}
+                    className="mt-2"
+                    onClick={() => {
+                      setMainTable(tableName.TABLE_NAME);
+                    }}
+                  >
+                    {tableName.TABLE_NAME}
+                  </ListGroup.Item>
+                );
+              })}
             </ListGroup>
-
-
-            
           </div>
-          
+
           <div>
             <div className={styles.btn_group}>
               <ButtonGroup aria-label="Basic example">
-                <Button 
-                  variant="outline-primary"
-                  onClick = {() => {
-                      setInsertBox(!insertBox) 
-                      setOperation(insertBox ? "" : "INSERT")
-                  }
-                }
-                  >INSERT</Button>
-                <Button variant="outline-primary">DELETE</Button>
-                <Button variant="outline-primary">UPDATE</Button>
-                <Button variant="outline-primary">SELECT</Button>
-                <Button variant="outline-primary">PROJECT</Button>
-                <Button variant="outline-primary">JOIN</Button>
-                <Button variant="outline-primary">AGGREGATION</Button>
+                {operations.map((operation, count) => {
+                  return (
+                    <Button
+                      key={count}
+                      variant="outline-primary"
+                      onClick={() => {
+                        setOperation(operation);
+                      }}
+                    >
+                      {operation}
+                    </Button>
+                  );
+                })}
               </ButtonGroup>
             </div>
             <div className={styles.form}>
-              <Form>
-                <Form.Group>
-                  {insertBox ? (
-                    <>
-                      {insertElements.map((element, count) => {
-                        return (<Form.Control
-                          key = {count}
-                          type="text"
-                          placeholder={element}
-                          value={query[element]}
-                          onChange={(e) => handleInputChange(element, e.target.value)}
-                        />
-                        );
-                      })}
-                    </>
-                    ) : (
-                      <Form.Control
-                      type="text"
-                      placeholder="Enter query"
-                      value={defaultQuery}
-                      onChange={(e) => setDefaultQuery(e.target.value)}
-                    />
-                    )}
-                </Form.Group>
-              </Form>
+              {operationUI[operation] ? operationUI[operation] : null}
             </div>
             <Button onClick={handleExecuteQuery} variant="outline-primary">
               Execute Query

@@ -17,7 +17,7 @@ export async function getTableData(table_name : string) {
  * @param query 
  * @returns JSON body
  */
-async function OracleServerRequest(query: string) {
+export async function OracleServerRequest(query: string) {
     console.log("query: " + query);
     const requestOptions = {
       method: "POST",
@@ -34,4 +34,3 @@ async function OracleServerRequest(query: string) {
 
     return result.json()
 }
-
