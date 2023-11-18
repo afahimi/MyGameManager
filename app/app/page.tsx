@@ -33,11 +33,6 @@ const Home = () => {
   const [curTableName, setCurTableName] = useState("");
   const [operation, setOperation] = useState<string>("");
 
-  // BROKEN -- trying to use redux
-  // const table : any = useAppSelector((state : any) => {state.table})
-  // useAppDispatch()
-  // console.log("TABLE: ", table)
-
   const operations = [
     "INSERT",
     "DELETE",
