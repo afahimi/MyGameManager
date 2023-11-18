@@ -25,7 +25,6 @@ type RecordType = Record<string, string>;
 
 const Home = () => {
   const [query, setQuery] = useState<Record<string, string>>({});
-  const [executeQuery, setExecuteQuery] = useState<string>("");
   const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
   const [sideMenuVisible, setSideMenuVisible] = useState("true");
@@ -51,25 +50,18 @@ const Home = () => {
     }));
   };
 
-  /* Given the values generate a query to execute and toss it to postRequest */
-  const handleExecuteQuery = async () => {
-    switch (operation) {
-      case "SELECT":
-        break;
-    }
-  };
-
+  
   useEffect(() => {
     getAllTableNames()
-      .then((res: any) => {
-        console.log("success:", res);
-        setTableNames(res);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    .then((res: any) => {
+      console.log("success:", res);
+      setTableNames(res);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
   }, []);
-
+  
   async function setMainTable(table_name: string) {
     setCurTableName(table_name);
     try {
@@ -79,33 +71,32 @@ const Home = () => {
       console.error("ERROR: ", err);
     }
   }
-
+  
   const createFormControlElements = () => {
     if (result.length === 0) {
       return null;
     }
-
     const keys = Object.keys(result[0]);
-
+    
     return keys.map((key, index) => {
       return (
         <Form.Control
-          key={index}
-          type="text"
-          placeholder={key}
-          onChange={(e) => handleInputChange(key, e.target.value)}
+        key={index}
+        type="text"
+        placeholder={key}
+        onChange={(e) => handleInputChange(key, e.target.value)}
         />
-      );
-    });
-  };
-
-  interface OperationUI {
-    [key: string]: JSX.Element;
-  }  
-
-  const operationUI: OperationUI = {
-    "SELECT": (
-      <>
+        );
+      });
+    };
+    
+    interface OperationUI {
+      [key: string]: JSX.Element;
+    }  
+    
+    const operationUI: OperationUI = {
+      "SELECT": (
+        <>
         <Form>
           <Form.Group>
             <Form.Control
@@ -113,21 +104,77 @@ const Home = () => {
               placeholder="Enter query"
               value={defaultQuery}
               onChange={(e) => setDefaultQuery(e.target.value)}
-            />
+              />
           </Form.Group>
         </Form>
       </>
     ),
-
-    "INSERT": (
+    
+      "INSERT": (
       <>
         <Form>
           <Form.Group>{createFormControlElements()}</Form.Group>
         </Form>
       </>
     ),
-  };
 
+      "DELETE": (
+      <>  
+        <Form>
+          <Form.Group>{createFormControlElements()}</Form.Group>
+        </Form>
+      </>
+    ),
+
+    "UPDATE": (
+      <>
+        <Form>
+          <Form.Group>
+            <Form.Control
+              type="text"
+              placeholder="Set"
+              value={defaultQuery}
+              onChange={(e) => setDefaultQuery(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group>
+            {createFormControlElements()}
+          </Form.Group>
+        </Form>
+      </>
+    ),
+
+  };
+  
+  /* Given the values generate a query to execute and toss it to postRequest */
+  const handleExecuteQuery = async () => {
+    let executeQuery = "";
+    switch (operation) {
+      case "SELECT":
+        let string = defaultQuery ? `${defaultQuery}` :'*';
+        executeQuery = `SELECT ${string} FROM ${curTableName}`;
+        break;
+
+      case "INSERT":
+        let entities = Object.keys(query).join(",");
+        let values = Object.values(query).map((entity: string) => `'${entity}'`).join(",");
+        executeQuery = `INSERT INTO ${curTableName} (${entities}) VALUES (${values});`; 
+        break;
+
+      case "DELETE":
+        let conditions = Object.entries(query).filter(([key, value]) => value.trim() !== '').map(([key, value]) => `${key} = '${value}'`).join(" AND ");
+        executeQuery = `DELETE FROM ${curTableName} WHERE ${conditions};`;
+        break;
+      
+      case "UPDATE":
+        let updates = Object.entries(query).filter(([key, value]) => value.trim() !== '').map(([key, value]) => `${key} = '${value}'`).join(" AND ");
+        executeQuery = `UPDATE ${curTableName} SET ${defaultQuery} WHERE ${updates};`
+        break;
+    }
+    setResult(await OracleServerRequest(executeQuery));
+  };
+  
+  
   return (
     <>
       <div className={styles.container}>
@@ -137,7 +184,7 @@ const Home = () => {
               className={`p-5 text-3xl font-onest text-slate-950 ${
                 sideMenuVisible ? "" : "hidden"
               }`}
-            >
+              >
               Database Query
             </h1>
             <ListGroup as={"ul"}>
