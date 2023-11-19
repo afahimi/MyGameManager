@@ -16,7 +16,7 @@
   margin-top: 20px;
   margin-bottom: 20px;
   width: 85%;
-} 
+}
 
 .table {
   margin-left: auto;
@@ -29,4 +29,16 @@
 .btn_group {
   margin-top: 20px;
   margin-bottom: 20px;
+}
+
+.project_form {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.project_form > * {
+  margin: 10px;
 }
