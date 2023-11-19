@@ -27,9 +27,11 @@ const Home = () => {
   const [query, setQuery] = useState<Record<string, string>>({});
   const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
+
   const [sideMenuVisible, setSideMenuVisible] = useState("true");
+
   const [tableNames, setTableNames] = useState([]);
-  const [curTableName, setCurTableName] = useState("");
+  const [currTable, setCurrTable] = useState("");
   const [operation, setOperation] = useState<string>("");
 
   const operations = [
@@ -40,7 +42,9 @@ const Home = () => {
     "PROJECT",
     "JOIN",
     "AGGREGATION",
+    "RAW QUERY"
   ];
+  
   /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
     console.log(defaultQuery);
@@ -62,8 +66,8 @@ const Home = () => {
     });
   }, []);
   
-  async function setMainTable(table_name: string) {
-    setCurTableName(table_name);
+  async function changeVisibleTable(table_name: string) {
+    setCurrTable(table_name);
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -144,6 +148,19 @@ const Home = () => {
       </>
     ),
 
+    "RAW QUERY": (
+      <>
+        <Form>
+          <Form.Control
+              type="text"
+              placeholder="Enter raw SQL commands"
+              value={defaultQuery}
+              onChange={(e) => setDefaultQuery(e.target.value)}
+              />
+        </Form>
+      </>
+    )
+
   };
   
   /* Given the values generate a query to execute and toss it to postRequest */
@@ -152,27 +169,35 @@ const Home = () => {
     switch (operation) {
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` :'*';
-        executeQuery = `SELECT ${string} FROM ${curTableName}`;
+        executeQuery = `SELECT ${string} FROM ${currTable}`;
         break;
 
       case "INSERT":
         let entities = Object.keys(query).join(",");
         let values = Object.values(query).map((entity: string) => `'${entity}'`).join(",");
-        executeQuery = `INSERT INTO ${curTableName} (${entities}) VALUES (${values});`; 
+        executeQuery = `INSERT INTO ${currTable} (${entities}) VALUES (${values});`; 
         break;
 
       case "DELETE":
         let conditions = Object.entries(query).filter(([key, value]) => value.trim() !== '').map(([key, value]) => `${key} = '${value}'`).join(" AND ");
-        executeQuery = `DELETE FROM ${curTableName} WHERE ${conditions};`;
+        executeQuery = `DELETE FROM ${currTable} WHERE ${conditions};`;
         break;
       
       case "UPDATE":
         let updates = Object.entries(query).filter(([key, value]) => value.trim() !== '').map(([key, value]) => `${key} = '${value}'`).join(" AND ");
-        executeQuery = `UPDATE ${curTableName} SET ${defaultQuery} WHERE ${updates};`
+        executeQuery = `UPDATE ${currTable} SET ${defaultQuery} WHERE ${updates};`
         break;
+
+      case "RAW QUERY":
+        executeQuery = defaultQuery
     }
     setResult(await OracleServerRequest(executeQuery));
   };
+
+  function handleDebugSubmit(event : any) {
+    OracleServerRequest(event.message)
+    event?.preventDefault()
+  }
   
   
   return (
@@ -195,7 +220,7 @@ const Home = () => {
                     as={"li"}
                     className="mt-2"
                     onClick={() => {
-                      setMainTable(tableName.TABLE_NAME);
+                      changeVisibleTable(tableName.TABLE_NAME);
                     }}
                   >
                     {tableName.TABLE_NAME}
@@ -229,11 +254,17 @@ const Home = () => {
             <Button onClick={handleExecuteQuery} variant="outline-primary">
               Execute Query
             </Button>
+            <div className=" text-cyan-800">
+            Current Table: {currTable}
+            </div>
             <div className={styles.table}>
+              
               {result && <DataTable data={result} />}
             </div>
           </div>
+          
         </div>
+            
       </div>
     </>
   );
