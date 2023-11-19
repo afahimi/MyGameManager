@@ -8,6 +8,7 @@ import Form from "react-bootstrap/Form";
 import DataTable from "./components/data_table";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ListGroup from "react-bootstrap/ListGroup";
+import Spinner from "react-bootstrap/Spinner";
 
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
@@ -165,6 +166,7 @@ const Home = () => {
   
   /* Given the values generate a query to execute and toss it to postRequest */
   const handleExecuteQuery = async () => {
+    setResult([]);
     let executeQuery = "";
     switch (operation) {
       case "SELECT":
@@ -198,6 +200,14 @@ const Home = () => {
     OracleServerRequest(event.message)
     event?.preventDefault()
   }
+
+  const getTableResults = (result: any) => {
+    if (result.length > 0) {
+      return <DataTable data={result} />;
+    } else {
+      return <Spinner animation="border" />;
+    }
+  };
   
   
   return (
@@ -258,8 +268,7 @@ const Home = () => {
             Current Table: {currTable}
             </div>
             <div className={styles.table}>
-              
-              {result && <DataTable data={result} />}
+              {getTableResults(result)}
             </div>
           </div>
           
