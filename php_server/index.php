@@ -65,8 +65,16 @@ function executePlainSQL($cmdstr) { //takes a plain (no bound variables) SQL com
 
 function handleQueryRequest($query) {
     global $db_conn;
+    $target = $query;
 
-    $statement = executePlainSQL($query);
+    if (strpos($target, ';') !== false) {
+        $target1 = explode(";", $query)[0];
+        $target2 = explode(";", $query)[1];
+        executePlainSQL($target1);
+        $statement = executePlainSQL($target2);
+    } else {
+        $statement = executePlainSQL($target);
+    }
 
     global $success;
     if(!$success) {

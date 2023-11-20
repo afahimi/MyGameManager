@@ -10,6 +10,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ListGroup from "react-bootstrap/ListGroup";
 import Spinner from "react-bootstrap/Spinner";
 import Col from "react-bootstrap/Col";
+import Dropdown from 'react-bootstrap/Dropdown';
 
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
@@ -37,6 +38,8 @@ const Home = () => {
   const [operation, setOperation] = useState<string>("");
 
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
+  const [joinSelection, setJoinSelection] = useState<string>("");
+  const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
 
   const operations = [
     "INSERT",
@@ -72,12 +75,14 @@ const Home = () => {
 
     return uniqueKeysArray.map((key, index) => {
       return (
-        <Form.Check
-          key={`${key}-${index}`}
-          type="checkbox"
-          label={key}
-          onChange={(e) => handleProjectCheckboxChange(e.target.checked, key)}
-        />
+        <div className="text-black">
+          <Form.Check
+            key={`${key}-${index}`}
+            type="checkbox"
+            label={key}
+            onChange={(e) => handleProjectCheckboxChange(e.target.checked, key)}
+          />
+        </div>
       );
     });
   };
@@ -133,6 +138,32 @@ const Home = () => {
     });
   };
 
+  const generateJoinElements = () => {
+    console.log(`table names: ${tableNames}`);
+    if (tableNames.length === 0) {
+      return null;
+    }
+
+    return tableNames.map((tableName: any, count) => {
+      return (
+        <Dropdown.Item
+          key={count}
+          onClick={() => {
+            setJoinSelection(tableName.TABLE_NAME);
+            getJoinSelectTable();
+          }}
+        >
+          {tableName.TABLE_NAME}
+        </Dropdown.Item>
+      );
+    })
+    
+  };
+
+ const getJoinSelectTable = async () => {
+    setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${joinSelection}`));
+  }
+
   const [field, setField] = useState<any[]>([]);
 
   interface OperationUI {
@@ -142,15 +173,19 @@ const Home = () => {
   const operationUI: OperationUI = {
     SELECT: (
       <>
+        <div>
         <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
           Select
         </h1>
         <Form>
           <div className={styles.project_form}>{generateProjectElements()}</div>
         </Form>
+        </div>
+        <div>
         <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
           From {currTable}
         </h1>
+        </div>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Where
@@ -163,6 +198,49 @@ const Home = () => {
             onChange={(e) => setDefaultQuery(e.target.value)}
           />
         </Form>
+        </div>
+      </>
+    ),
+
+    JOIN: (
+      <>
+        <div className="inline-flex space-x-4">
+            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+              Select
+            </h1>
+            <Form>
+              <div className={styles.project_form}>{generateProjectElements()}</div>
+            </Form>
+        </div>
+        <div className="inline-flex space-x-4">
+            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+              From
+            </h1>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {joinSelection ? joinSelection : "Select Table"}
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu>
+                {generateJoinElements()}
+              </Dropdown.Menu>
+            </Dropdown>
+            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            , {currTable}
+            </h1>
+        </div>
+        <div className="inline-flex space-x-4 mt-4">
+            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+              Where
+            </h1>
+            <Form>
+            <Form.Control
+              type="text"
+              placeholder="Enter condition"
+              value={defaultQuery}
+              onChange={(e) => setDefaultQuery(e.target.value)}
+            />
+            </Form>
         </div>
       </>
     ),
@@ -241,7 +319,7 @@ const Home = () => {
         let values = Object.values(query)
           .map((entity: string) => `'${entity}'`)
           .join(",");
-        executeQuery = `INSERT INTO ${currTable} (${entities}) VALUES (${values});`;
+        executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
         break;
 
       case "DELETE":
@@ -249,7 +327,7 @@ const Home = () => {
           .filter(([key, value]) => value.trim() !== "")
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-        executeQuery = `DELETE FROM ${currTable} WHERE ${conditions};`;
+        executeQuery = `DELETE FROM ${currTable} WHERE ${conditions}; \n COMMIT`;
         break;
 
       case "UPDATE":
@@ -257,7 +335,7 @@ const Home = () => {
           .filter(([key, value]) => value.trim() !== "")
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-        executeQuery = `UPDATE ${currTable} SET ${defaultQuery} WHERE ${updates};`;
+        executeQuery = `UPDATE ${currTable} SET ${defaultQuery} WHERE ${updates}; COMMIT`;
         break;
 
       case "PROJECT":
@@ -267,11 +345,20 @@ const Home = () => {
         )} FROM ${currTable}`;
         break;
 
+      case "JOIN":
+        setProjectSelections([]);
+        executeQuery = `SELECT ${projectSelections.join(', ')} FROM ${currTable}, ${joinSelection} WHERE ${defaultQuery}`;
+        console.log(executeQuery)
+        break;
+
       case "RAW QUERY":
         executeQuery = defaultQuery;
     }
     setResult(await OracleServerRequest(executeQuery));
-    // await changeVisibleTable(currTable)
+    if (operation == "INSERT") {
+      // for saving insert command
+      //await OracleServerRequest("COMMIT")
+    }
   };
 
   function handleDebugSubmit(event: any) {
@@ -360,6 +447,13 @@ const Home = () => {
               {operation ? `Current Operation: ${operation}` : null}
             </div>
             <div className={styles.table}>{getTableResults(result)}</div>
+            <div className={styles.table}>{(() => {
+                if (joinTableResult.length > 0 && operation === "JOIN") {
+                  return <DataTable data={joinTableResult} />;
+                } else {
+                  return <></>;
+                }
+            })()}</div>
           </div>
         </div>
       </div>
