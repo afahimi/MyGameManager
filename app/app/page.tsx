@@ -68,6 +68,8 @@ const Home = () => {
   
   async function changeVisibleTable(table_name: string) {
     setCurrTable(table_name);
+    setDefaultQuery("")
+    setQuery({})
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -175,7 +177,7 @@ const Home = () => {
       case "INSERT":
         let entities = Object.keys(query).join(",");
         let values = Object.values(query).map((entity: string) => `'${entity}'`).join(",");
-        executeQuery = `INSERT INTO ${currTable} (${entities}) VALUES (${values});`; 
+        executeQuery = `INSERT INTO ${currTable} (${entities}) VALUES (${values}) WHERE owner = '${process.env.ORACLE_USERNAME}'`; 
         break;
 
       case "DELETE":
@@ -192,6 +194,8 @@ const Home = () => {
         executeQuery = defaultQuery
     }
     setResult(await OracleServerRequest(executeQuery));
+    // await changeVisibleTable(currTable)
+
   };
 
   function handleDebugSubmit(event : any) {
