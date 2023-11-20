@@ -107,6 +107,8 @@ const Home = () => {
   async function changeVisibleTable(table_name: string) {
     setResult([]);
     setCurrTable(table_name);
+    setDefaultQuery("")
+    setQuery({})
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -256,6 +258,8 @@ const Home = () => {
         executeQuery = defaultQuery;
     }
     setResult(await OracleServerRequest(executeQuery));
+    // await changeVisibleTable(currTable)
+
   };
 
   function handleDebugSubmit(event: any) {
