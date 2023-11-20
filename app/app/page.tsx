@@ -59,7 +59,30 @@ const Home = () => {
         prevSelections.filter((item) => item !== key)
       );
     }
+    console.log(projectSelections);
   };
+
+  const generateProjectElements = () => {
+    if (result.length === 0) {
+      return null;
+    }
+
+    const uniqueKeys = new Set(Object.keys(result[0]));
+    const uniqueKeysArray = Array.from(uniqueKeys);
+
+    return uniqueKeysArray.map((key, index) => {
+      return (
+        <Form.Check
+          key={`${key}-${index}`}
+          type="checkbox"
+          label={key}
+          onChange={(e) =>
+            handleProjectCheckboxChange(e.target.checked, key)
+          }
+        />
+      );
+    });
+  }
 
   /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
@@ -168,27 +191,7 @@ const Home = () => {
       <>
         <Form>
           <div className={styles.project_form}>
-            {tableNames.map((tableName, count) => {
-              if (result.length === 0) {
-                return null;
-              }
-
-              const uniqueKeys = new Set(Object.keys(result[0]));
-              const uniqueKeysArray = Array.from(uniqueKeys);
-
-              return uniqueKeysArray.map((key, index) => {
-                return (
-                  <Form.Check
-                    key={`${tableName}-${key}-${index}`}
-                    type="checkbox"
-                    label={key}
-                    onChange={(e) =>
-                      handleProjectCheckboxChange(e.target.checked, key)
-                    }
-                  />
-                );
-              });
-            })}
+            {generateProjectElements()}
           </div>
         </Form>
       </>
@@ -243,6 +246,7 @@ const Home = () => {
         break;
 
       case "PROJECT":
+        setProjectSelections([]);
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable}`;
