@@ -76,13 +76,11 @@ const Home = () => {
           key={`${key}-${index}`}
           type="checkbox"
           label={key}
-          onChange={(e) =>
-            handleProjectCheckboxChange(e.target.checked, key)
-          }
+          onChange={(e) => handleProjectCheckboxChange(e.target.checked, key)}
         />
       );
     });
-  }
+  };
 
   /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
@@ -107,8 +105,8 @@ const Home = () => {
   async function changeVisibleTable(table_name: string) {
     setResult([]);
     setCurrTable(table_name);
-    setDefaultQuery("")
-    setQuery({})
+    setDefaultQuery("");
+    setQuery({});
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -192,9 +190,7 @@ const Home = () => {
     PROJECT: (
       <>
         <Form>
-          <div className={styles.project_form}>
-            {generateProjectElements()}
-          </div>
+          <div className={styles.project_form}>{generateProjectElements()}</div>
         </Form>
       </>
     ),
@@ -259,7 +255,6 @@ const Home = () => {
     }
     setResult(await OracleServerRequest(executeQuery));
     // await changeVisibleTable(currTable)
-
   };
 
   function handleDebugSubmit(event: any) {
@@ -325,6 +320,11 @@ const Home = () => {
             </div>
             <div className={styles.form}>
               {operationUI[operation] ? operationUI[operation] : null}
+            </div>
+            <div className={styles.reset_btn}>
+              <Button onClick={() => {changeVisibleTable(currTable)}} variant="outline-primary">
+                Reset View
+              </Button>
             </div>
             <Button onClick={handleExecuteQuery} variant="outline-primary">
               Execute Query
