@@ -142,16 +142,28 @@ const Home = () => {
   const operationUI: OperationUI = {
     SELECT: (
       <>
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          Select
+        </h1>
         <Form>
-          <Form.Group>
-            <Form.Control
-              type="text"
-              placeholder="Enter query"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form.Group>
+          <div className={styles.project_form}>{generateProjectElements()}</div>
         </Form>
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          From {currTable}
+        </h1>
+        <div className="inline-flex space-x-4">
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Where
+          </h1>
+          <Form>
+          <Form.Control
+            type="text"
+            placeholder="Enter condition"
+            value={defaultQuery}
+            onChange={(e) => setDefaultQuery(e.target.value)}
+          />
+        </Form>
+        </div>
       </>
     ),
 
@@ -216,9 +228,11 @@ const Home = () => {
     switch (operation) {
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
-        executeQuery = `SELECT ${string} FROM ${currTable}`;
+        setProjectSelections([]);
+        executeQuery = `SELECT ${projectSelections.join(
+          ","
+        )} FROM ${currTable} where ${defaultQuery}`;
         break;
-
       case "INSERT":
         let entities = Object.keys(query).join(",");
         let values = Object.values(query)
@@ -322,7 +336,12 @@ const Home = () => {
               {operationUI[operation] ? operationUI[operation] : null}
             </div>
             <div className={styles.reset_btn}>
-              <Button onClick={() => {changeVisibleTable(currTable)}} variant="outline-primary">
+              <Button
+                onClick={() => {
+                  changeVisibleTable(currTable);
+                }}
+                variant="outline-primary"
+              >
                 Reset View
               </Button>
             </div>
