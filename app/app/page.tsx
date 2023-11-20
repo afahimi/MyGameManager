@@ -201,6 +201,9 @@ const Home = () => {
 
     PROJECT: (
       <>
+       <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          Select
+        </h1>
         <Form>
           <div className={styles.project_form}>{generateProjectElements()}</div>
         </Form>
