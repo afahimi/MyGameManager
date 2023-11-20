@@ -334,6 +334,9 @@ const Home = () => {
                 ? `Current Table: ${currTable}`
                 : "Select a table to view"}
             </div>
+            <div className="text-cyan-800">
+              {operation ? `Current Operation: ${operation}` : null}
+            </div>
             <div className={styles.table}>{getTableResults(result)}</div>
           </div>
         </div>
