@@ -26,14 +26,13 @@ const DataTable = ({data}: DataTableProps) => {
       let values = Object.values(data[i]);
       let items = [];
       for (let j = 0; j < values.length; j++) {
-        items.push(<td>{values[j]}</td>);
+        items.push(<td key={`row-${i}-col-${j}`}>{values[j]}</td>);
       }
-      result.push(items);
+      result.push(<tr key={`row-${i}`}>{items}</tr>);
     }
-    return result.map((obj, index) => {
-      return <tr key={index}>{...obj}</tr>;
-    });
+    return result;
   };
+  
 
 
   return (
