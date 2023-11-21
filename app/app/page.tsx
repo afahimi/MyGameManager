@@ -320,6 +320,8 @@ const Home = () => {
           .map((entity: string) => `'${entity}'`)
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
+        await OracleServerRequest(executeQuery);
+        executeQuery = `SELECT * FROM ${currTable}`;
         break;
 
       case "DELETE":
@@ -355,10 +357,6 @@ const Home = () => {
         executeQuery = defaultQuery;
     }
     setResult(await OracleServerRequest(executeQuery));
-    if (operation == "INSERT") {
-      // for saving insert command
-      //await OracleServerRequest("COMMIT")
-    }
   };
 
   function handleDebugSubmit(event: any) {
