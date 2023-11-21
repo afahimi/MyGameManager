@@ -40,6 +40,7 @@ const Home = () => {
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
+  const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
   const operations = [
     "INSERT",
@@ -95,16 +96,12 @@ const Home = () => {
     }));
   };
 
-  useEffect(() => {
-    getAllTableNames()
-      .then((res: any) => {
-        console.log("success:", res);
-        setTableNames(res);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
+  const handleUpdateChange = (fieldName: string, value: string) => {
+    setUpdateValues((prevQuery) => ({
+      ...prevQuery,
+      [fieldName]: value,
+    }));
+  };
 
   async function changeVisibleTable(table_name: string) {
     setResult([]);
@@ -119,7 +116,18 @@ const Home = () => {
     }
   }
 
-  const createFormControlElements = () => {
+  useEffect(() => {
+    getAllTableNames()
+      .then((res: any) => {
+        console.log("success:", res);
+        setTableNames(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
+
+  const createFormControlElements = (handleFunction = handleInputChange) => {
     if (result.length === 0) {
       return null;
     }
@@ -131,14 +139,13 @@ const Home = () => {
           key={index}
           type="text"
           placeholder={key}
-          onChange={(e) => handleInputChange(key, e.target.value)}
+          onChange={(e) => handleFunction(key, e.target.value)}
         />
       );
     });
   };
 
   const generateJoinElements = () => {
-    console.log(`table names: ${tableNames}`);
     if (tableNames.length === 0) {
       return null;
     }
@@ -266,15 +273,14 @@ const Home = () => {
     UPDATE: (
       <>
         <Form>
-          <Form.Group>
-            <Form.Control
-              type="text"
-              placeholder="Set"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form.Group>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Target Row:
+          </h1>
           <Form.Group>{createFormControlElements()}</Form.Group>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Set:
+          </h1>
+          <Form.Group>{createFormControlElements(handleUpdateChange)}</Form.Group>
         </Form>
       </>
     ),
@@ -330,18 +336,24 @@ const Home = () => {
         let condition = Object.entries(query)
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-          
-          executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
-          await OracleServerRequest(executeQuery);
-          executeQuery = `SELECT * FROM ${currTable}`;
+
+        executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
+        await OracleServerRequest(executeQuery);
+        executeQuery = `SELECT * FROM ${currTable}`;
         break;
 
       case "UPDATE":
-        let updates = Object.entries(query)
-          .filter(([key, value]) => value.trim() !== "")
+        let targetRow = Object.entries(query)
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-        executeQuery = `UPDATE ${currTable} SET ${defaultQuery} WHERE ${updates}; COMMIT`;
+          
+        let updates = Object.entries(updateValues)
+          .filter(([key, value]) => value.trim() !== "")
+          .map(([key, value]) => `${key} = '${value}'`)
+          .join(", ");
+        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
+        await OracleServerRequest(executeQuery);
+        executeQuery = `SELECT * FROM ${currTable}`;
         break;
 
       case "PROJECT":
@@ -362,7 +374,7 @@ const Home = () => {
       case "RAW QUERY":
         executeQuery = defaultQuery;
     }
-    console.log(`Default Query: ${query["SKILLNAME"]}`);
+    console.log(executeQuery);
     setResult(await OracleServerRequest(executeQuery));
   };
 
