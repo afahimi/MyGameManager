@@ -10,7 +10,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ListGroup from "react-bootstrap/ListGroup";
 import Spinner from "react-bootstrap/Spinner";
 import Col from "react-bootstrap/Col";
-import Dropdown from 'react-bootstrap/Dropdown';
+import Dropdown from "react-bootstrap/Dropdown";
 
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
@@ -75,9 +75,8 @@ const Home = () => {
 
     return uniqueKeysArray.map((key, index) => {
       return (
-        <div className="text-black">
+        <div key={`${key}-${index}`} className="text-black">
           <Form.Check
-            key={`${key}-${index}`}
             type="checkbox"
             label={key}
             onChange={(e) => handleProjectCheckboxChange(e.target.checked, key)}
@@ -156,13 +155,14 @@ const Home = () => {
           {tableName.TABLE_NAME}
         </Dropdown.Item>
       );
-    })
-    
+    });
   };
 
- const getJoinSelectTable = async () => {
-    setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${joinSelection}`));
-  }
+  const getJoinSelectTable = async () => {
+    setJoinTableResult(
+      await OracleServerRequest(`SELECT * FROM ${joinSelection}`)
+    );
+  };
 
   const [field, setField] = useState<any[]>([]);
 
@@ -174,30 +174,32 @@ const Home = () => {
     SELECT: (
       <>
         <div>
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Select
-        </h1>
-        <Form>
-          <div className={styles.project_form}>{generateProjectElements()}</div>
-        </Form>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Select
+          </h1>
+          <Form>
+            <div className={styles.project_form}>
+              {generateProjectElements()}
+            </div>
+          </Form>
         </div>
         <div>
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          From {currTable}
-        </h1>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            From {currTable}
+          </h1>
         </div>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Where
           </h1>
           <Form>
-          <Form.Control
-            type="text"
-            placeholder="Enter condition"
-            value={defaultQuery}
-            onChange={(e) => setDefaultQuery(e.target.value)}
-          />
-        </Form>
+            <Form.Control
+              type="text"
+              placeholder="Enter condition"
+              value={defaultQuery}
+              onChange={(e) => setDefaultQuery(e.target.value)}
+            />
+          </Form>
         </div>
       </>
     ),
@@ -205,42 +207,42 @@ const Home = () => {
     JOIN: (
       <>
         <div className="inline-flex space-x-4">
-            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-              Select
-            </h1>
-            <Form>
-              <div className={styles.project_form}>{generateProjectElements()}</div>
-            </Form>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Select
+          </h1>
+          <Form>
+            <div className={styles.project_form}>
+              {generateProjectElements()}
+            </div>
+          </Form>
         </div>
         <div className="inline-flex space-x-4">
-            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-              From
-            </h1>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {joinSelection ? joinSelection : "Select Table"}
-              </Dropdown.Toggle>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            From
+          </h1>
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              {joinSelection ? joinSelection : "Select Table"}
+            </Dropdown.Toggle>
 
-              <Dropdown.Menu>
-                {generateJoinElements()}
-              </Dropdown.Menu>
-            </Dropdown>
-            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+          </Dropdown>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             , {currTable}
-            </h1>
+          </h1>
         </div>
         <div className="inline-flex space-x-4 mt-4">
-            <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-              Where
-            </h1>
-            <Form>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Where
+          </h1>
+          <Form>
             <Form.Control
               type="text"
               placeholder="Enter condition"
               value={defaultQuery}
               onChange={(e) => setDefaultQuery(e.target.value)}
             />
-            </Form>
+          </Form>
         </div>
       </>
     ),
@@ -279,7 +281,7 @@ const Home = () => {
 
     PROJECT: (
       <>
-       <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
           Select
         </h1>
         <Form>
@@ -325,11 +327,13 @@ const Home = () => {
         break;
 
       case "DELETE":
-        let conditions = Object.entries(query)
-          .filter(([key, value]) => value.trim() !== "")
+        let condition = Object.entries(query)
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-        executeQuery = `DELETE FROM ${currTable} WHERE ${conditions}; \n COMMIT`;
+          
+          executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
+          await OracleServerRequest(executeQuery);
+          executeQuery = `SELECT * FROM ${currTable}`;
         break;
 
       case "UPDATE":
@@ -349,13 +353,16 @@ const Home = () => {
 
       case "JOIN":
         setProjectSelections([]);
-        executeQuery = `SELECT ${projectSelections.join(', ')} FROM ${currTable}, ${joinSelection} WHERE ${defaultQuery}`;
-        console.log(executeQuery)
+        executeQuery = `SELECT ${projectSelections.join(
+          ", "
+        )} FROM ${currTable}, ${joinSelection} WHERE ${defaultQuery}`;
+        console.log(executeQuery);
         break;
 
       case "RAW QUERY":
         executeQuery = defaultQuery;
     }
+    console.log(`Default Query: ${query["SKILLNAME"]}`);
     setResult(await OracleServerRequest(executeQuery));
   };
 
@@ -445,13 +452,15 @@ const Home = () => {
               {operation ? `Current Operation: ${operation}` : null}
             </div>
             <div className={styles.table}>{getTableResults(result)}</div>
-            <div className={styles.table}>{(() => {
+            <div className={styles.table}>
+              {(() => {
                 if (joinTableResult.length > 0 && operation === "JOIN") {
                   return <DataTable data={joinTableResult} />;
                 } else {
                   return <></>;
                 }
-            })()}</div>
+              })()}
+            </div>
           </div>
         </div>
       </div>
