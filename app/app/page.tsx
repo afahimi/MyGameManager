@@ -278,7 +278,7 @@ const Home = () => {
           </h1>
           <Form.Group>{createFormControlElements()}</Form.Group>
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Set:
+            Set values (or leave blank to not update):
           </h1>
           <Form.Group>{createFormControlElements(handleUpdateChange)}</Form.Group>
         </Form>
