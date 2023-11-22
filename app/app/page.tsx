@@ -18,6 +18,7 @@ import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
+import { AGGREGATION_OPS } from "./utils/constants.ts"
 
 const roboto = Roboto({
   weight: "400",
@@ -35,10 +36,16 @@ const Home = () => {
 
   const [tableNames, setTableNames] = useState([]);
   const [currTable, setCurrTable] = useState("");
+  const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
 
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
+
+  // groupBy is ['Group By Attr', 'Aggregate Attr']
+  const [groupBy, setGroupBy] = useState<any[]>([]);
+  const [groupByOperation, setGroupByOperation] = useState<string>("");
+
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
@@ -64,6 +71,7 @@ const Home = () => {
       );
     }
     console.log(projectSelections);
+    setCurrTableKeys(Object.keys(result[0]));
   };
 
   const generateProjectElements = () => {
@@ -86,6 +94,14 @@ const Home = () => {
       );
     });
   };
+
+  const getTableAttributes = () => {
+    if (result.length == 0) {
+      return []
+    }
+    const uniqueKeys = new Set(Object.keys(result[0]));
+    return uniqueKeys;
+  }
 
   /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
@@ -121,6 +137,7 @@ const Home = () => {
       .then((res: any) => {
         console.log("success:", res);
         setTableNames(res);
+        changeVisibleTable("CHARACTERINFO")
       })
       .catch((err) => {
         console.log(err);
@@ -144,6 +161,7 @@ const Home = () => {
       );
     });
   };
+  
 
   const generateJoinElements = () => {
     if (tableNames.length === 0) {
@@ -280,7 +298,9 @@ const Home = () => {
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Set values (or leave blank to not update):
           </h1>
-          <Form.Group>{createFormControlElements(handleUpdateChange)}</Form.Group>
+          <Form.Group>
+            {createFormControlElements(handleUpdateChange)}
+          </Form.Group>
         </Form>
       </>
     ),
@@ -296,6 +316,62 @@ const Home = () => {
       </>
     ),
 
+    AGGREGATION: (
+      <div className="flex justify-center items-center gap-2">
+        Group
+        <div>
+          <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupByOperation}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>{AGGREGATION_OPS.map((elem) => {
+                  return (
+                    <>
+                    <Dropdown.Item key={elem} onClick={() => setGroupByOperation(elem)}>{elem}</Dropdown.Item>
+                    </>
+                  )
+                })}</Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          <div>
+          <Form>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {groupBy[0]}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>{Array.from(getTableAttributes()).map((elem) => {
+                return (
+                  <>
+                  <Dropdown.Item key={elem} onClick={() => setGroupBy((old : any) => [elem, old[1]])}>{elem}</Dropdown.Item>
+                  </>
+                )
+              })}</Dropdown.Menu>
+            </Dropdown>
+          </Form>
+          </div>
+        
+        By
+        
+          <div>
+          <Form>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {groupBy[1]}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>{Array.from(getTableAttributes()).map((elem) => {
+                return (
+                  <>
+                  <Dropdown.Item key={`2-${elem}`} onClick={() => setGroupBy((old : any) => [old[0], elem])}>{elem}</Dropdown.Item>
+                  </>
+                )
+              })}</Dropdown.Menu>
+            </Dropdown>
+          </Form>
+        </div>
+      </div>
+    ),
     "RAW QUERY": (
       <>
         <Form>
@@ -346,7 +422,7 @@ const Home = () => {
         let targetRow = Object.entries(query)
           .map(([key, value]) => `${key} = '${value}'`)
           .join(" AND ");
-          
+
         let updates = Object.entries(updateValues)
           .filter(([key, value]) => value.trim() !== "")
           .map(([key, value]) => `${key} = '${value}'`)
@@ -373,6 +449,14 @@ const Home = () => {
 
       case "RAW QUERY":
         executeQuery = defaultQuery;
+        break;
+      
+      case "AGGREGATION":
+        executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
+        console.log(executeQuery);
+        break;
+
+          
     }
     console.log(executeQuery);
     setResult(await OracleServerRequest(executeQuery));
@@ -394,7 +478,7 @@ const Home = () => {
   return (
     <>
       <div className={styles.container}>
-        <div className="flex h-full w-full">
+        <div className="flex h-full w-full text-slate-900">
           <div className="bg-slate-200 h-full mr-3">
             <h1
               className={`p-5 text-3xl font-onest text-slate-950 ${
