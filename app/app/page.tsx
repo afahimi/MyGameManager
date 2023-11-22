@@ -43,13 +43,14 @@ const Home = () => {
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
   const operations = [
-    "INSERT",
-    "DELETE",
-    "UPDATE",
     "SELECT",
     "PROJECT",
     "JOIN",
     "AGGREGATION",
+    "DIVISION",
+    "INSERT",
+    "DELETE",
+    "UPDATE",
     "RAW QUERY",
   ];
 
