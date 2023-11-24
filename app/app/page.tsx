@@ -18,7 +18,7 @@ import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
-import { AGGREGATION_OPS } from "./utils/constants.ts"
+import { AGGREGATION_OPS } from "./utils/constants.ts";
 
 const roboto = Roboto({
   weight: "400",
@@ -75,12 +75,15 @@ const Home = () => {
     setCurrTableKeys(Object.keys(result[0]));
   };
 
-  const generateProjectElements = () => {
-    if (result.length === 0) {
+  const generateProjectElements = (
+    res: string[] = result,
+    tableName: string = currTable
+  ) => {
+    if (res.length === 0) {
       return null;
     }
 
-    const uniqueKeys = new Set(Object.keys(result[0]));
+    const uniqueKeys = new Set(Object.keys(res[0]));
     const uniqueKeysArray = Array.from(uniqueKeys);
 
     return uniqueKeysArray.map((key, index) => {
@@ -89,20 +92,35 @@ const Home = () => {
           <Form.Check
             type="checkbox"
             label={key}
-            onChange={(e) => handleProjectCheckboxChange(e.target.checked, key)}
+            onChange={(e) =>
+              handleProjectCheckboxChange(
+                e.target.checked,
+                `${tableName}.${key}`
+              )
+            }
           />
         </div>
       );
     });
   };
 
+  const convertStringToIntIfPossible = (str: string) => {
+    var num = parseInt(str, 10);
+    return isNaN(num) ? str : num;
+  };
+
+  const returnProperString = (key : string, value : string) => {
+    const converted = convertStringToIntIfPossible(value);
+    return typeof converted === "number" ? `${key} = ${converted}` : `${key} = '${converted}'`;
+  }
+
   const getTableAttributes = () => {
     if (result.length == 0) {
-      return []
+      return [];
     }
     const uniqueKeys = new Set(Object.keys(result[0]));
     return uniqueKeys;
-  }
+  };
 
   /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
@@ -138,7 +156,7 @@ const Home = () => {
       .then((res: any) => {
         console.log("success:", res);
         setTableNames(res);
-        changeVisibleTable("CHARACTERINFO")
+        changeVisibleTable("CHARACTERINFO");
       })
       .catch((err) => {
         console.log(err);
@@ -162,7 +180,6 @@ const Home = () => {
       );
     });
   };
-  
 
   const generateJoinElements = () => {
     if (tableNames.length === 0) {
@@ -175,7 +192,7 @@ const Home = () => {
           key={count}
           onClick={() => {
             setJoinSelection(tableName.TABLE_NAME);
-            getJoinSelectTable();
+            getJoinSelectTable(tableName.TABLE_NAME);
           }}
         >
           {tableName.TABLE_NAME}
@@ -184,10 +201,8 @@ const Home = () => {
     });
   };
 
-  const getJoinSelectTable = async () => {
-    setJoinTableResult(
-      await OracleServerRequest(`SELECT * FROM ${joinSelection}`)
-    );
+  const getJoinSelectTable = async (tableName: string) => {
+    setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
 
   const [field, setField] = useState<any[]>([]);
@@ -205,7 +220,7 @@ const Home = () => {
           </h1>
           <Form>
             <div className={styles.project_form}>
-              {generateProjectElements()}
+              {generateProjectElements(result)}
             </div>
           </Form>
         </div>
@@ -238,7 +253,8 @@ const Home = () => {
           </h1>
           <Form>
             <div className={styles.project_form}>
-              {generateProjectElements()}
+              {generateProjectElements(result)}
+              {generateProjectElements(joinTableResult, joinSelection)}
             </div>
           </Form>
         </div>
@@ -322,52 +338,71 @@ const Home = () => {
         Group
         <div>
           <Form>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                  {groupByOperation}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>{AGGREGATION_OPS.map((elem) => {
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {groupByOperation}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {AGGREGATION_OPS.map((elem) => {
                   return (
                     <>
-                    <Dropdown.Item key={elem} onClick={() => setGroupByOperation(elem)}>{elem}</Dropdown.Item>
+                      <Dropdown.Item
+                        key={elem}
+                        onClick={() => setGroupByOperation(elem)}
+                      >
+                        {elem}
+                      </Dropdown.Item>
                     </>
-                  )
-                })}</Dropdown.Menu>
-              </Dropdown>
-            </Form>
-          </div>
-          <div>
+                  );
+                })}
+              </Dropdown.Menu>
+            </Dropdown>
+          </Form>
+        </div>
+        <div>
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
                 {groupBy[0]}
               </Dropdown.Toggle>
-              <Dropdown.Menu>{Array.from(getTableAttributes()).map((elem) => {
-                return (
-                  <>
-                  <Dropdown.Item key={elem} onClick={() => setGroupBy((old : any) => [elem, old[1]])}>{elem}</Dropdown.Item>
-                  </>
-                )
-              })}</Dropdown.Menu>
+              <Dropdown.Menu>
+                {Array.from(getTableAttributes()).map((elem) => {
+                  return (
+                    <>
+                      <Dropdown.Item
+                        key={elem}
+                        onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                      >
+                        {elem}
+                      </Dropdown.Item>
+                    </>
+                  );
+                })}
+              </Dropdown.Menu>
             </Dropdown>
           </Form>
-          </div>
-        
+        </div>
         By
-        
-          <div>
+        <div>
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
                 {groupBy[1]}
               </Dropdown.Toggle>
-              <Dropdown.Menu>{Array.from(getTableAttributes()).map((elem) => {
-                return (
-                  <>
-                  <Dropdown.Item key={`2-${elem}`} onClick={() => setGroupBy((old : any) => [old[0], elem])}>{elem}</Dropdown.Item>
-                  </>
-                )
-              })}</Dropdown.Menu>
+              <Dropdown.Menu>
+                {Array.from(getTableAttributes()).map((elem) => {
+                  return (
+                    <>
+                      <Dropdown.Item
+                        key={`2-${elem}`}
+                        onClick={() => setGroupBy((old: any) => [old[0], elem])}
+                      >
+                        {elem}
+                      </Dropdown.Item>
+                    </>
+                  );
+                })}
+              </Dropdown.Menu>
             </Dropdown>
           </Form>
         </div>
@@ -392,19 +427,22 @@ const Home = () => {
     setResult([]);
     let executeQuery = "";
     switch (operation) {
-      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
+        let where_clause2 = defaultQuery ? `WHERE ${defaultQuery}` : "";
         executeQuery = `SELECT ${projectSelections.join(
           ","
-        )} FROM ${currTable} where ${defaultQuery}`;
+        )} FROM ${currTable} ${where_clause2}`;
         break;
 
       case "INSERT":
         let entities = Object.keys(query).join(",");
         let values = Object.values(query)
-          .map((entity: string) => `'${entity}'`)
+          .map((entity) => {
+            const converted = convertStringToIntIfPossible(entity);
+            return typeof converted === "number" ? converted : `'${converted}'`;
+          })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
         await OracleServerRequest(executeQuery);
@@ -413,7 +451,9 @@ const Home = () => {
 
       case "DELETE":
         let condition = Object.entries(query)
-          .map(([key, value]) => `${key} = '${value}'`)
+          .map(([key, value]) => {
+            return returnProperString(key, value);
+          })
           .join(" AND ");
 
         executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
@@ -423,12 +463,16 @@ const Home = () => {
 
       case "UPDATE":
         let targetRow = Object.entries(query)
-          .map(([key, value]) => `${key} = '${value}'`)
+          .map(([key, value]) => {
+            return returnProperString(key, value);
+          })
           .join(" AND ");
 
         let updates = Object.entries(updateValues)
           .filter(([key, value]) => value.trim() !== "")
-          .map(([key, value]) => `${key} = '${value}'`)
+          .map(([key, value]) => {
+            return returnProperString(key, value);
+          })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
         await OracleServerRequest(executeQuery);
@@ -444,22 +488,21 @@ const Home = () => {
 
       case "JOIN":
         setProjectSelections([]);
+        let where_clause = defaultQuery ? `WHERE ${defaultQuery}` : "";
         executeQuery = `SELECT ${projectSelections.join(
           ", "
-        )} FROM ${currTable}, ${joinSelection} WHERE ${defaultQuery}`;
+        )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
         console.log(executeQuery);
         break;
 
       case "RAW QUERY":
         executeQuery = defaultQuery;
         break;
-      
+
       case "AGGREGATION":
         executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
         console.log(executeQuery);
         break;
-
-          
     }
     console.log(executeQuery);
     setResult(await OracleServerRequest(executeQuery));
