@@ -316,6 +316,7 @@ const Home = () => {
     setResult([]);
     let executeQuery = "";
     switch (operation) {
+      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
@@ -323,6 +324,7 @@ const Home = () => {
           ","
         )} FROM ${currTable} where ${defaultQuery}`;
         break;
+
       case "INSERT":
         let entities = Object.keys(query).join(",");
         let values = Object.values(query)

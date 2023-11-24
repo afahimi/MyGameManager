@@ -1,11 +1,28 @@
-CREATE TABLE Location (
+DROP TABLE QuestRewards;
+DROP TABLE YieldsQuest;
+DROP TABLE Interactions;
+DROP TABLE Contains;
+DROP TABLE Inventory;
+DROP TABLE Player;
+DROP TABLE NonPlayableCharacter;
+DROP TABLE RewardItems;
+DROP TABLE Develops;
+DROP TABLE MemberOf;
+DROP TABLE CharacterInfo;
+DROP TABLE CoordinateLocations;
+DROP TABLE Skill;
+DROP TABLE Factions;
+DROP TABLE Item;
+DROP TABLE Locations;
+
+CREATE TABLE Locations (
     LocationName VARCHAR2(255) PRIMARY KEY,
     LocationType VARCHAR2(255)
 );
 
 CREATE TABLE CoordinateLocations (
     Coordinates VARCHAR2(255) PRIMARY KEY,
-    LocationName VARCHAR2(255) NOT NULL REFERENCES Location(LocationName) 
+    LocationName VARCHAR2(255) NOT NULL REFERENCES Locations(LocationName) 
 ON DELETE CASCADE
 );
 
@@ -42,7 +59,7 @@ CREATE TABLE Skill (
 CREATE TABLE Develops (
     SkillName VARCHAR2(255),
     CharacterID INT,
-    "Level" INT,
+    CurrentLevel INT,
     PRIMARY KEY (SkillName, CharacterID),
     FOREIGN KEY (SkillName) REFERENCES Skill(SkillName) ON DELETE CASCADE,
     FOREIGN KEY (CharacterID) REFERENCES CharacterInfo(CharacterID) ON
@@ -125,11 +142,11 @@ CASCADE,
 DELETE CASCADE
 );
 
-INSERT INTO Location (LocationName, LocationType) VALUES ('Floating City', 'Sky');
-INSERT INTO Location (LocationName, LocationType) VALUES ('The Great Forest', 'Forest');
-INSERT INTO Location (LocationName, LocationType) VALUES ('The End', 'Endgame');
-INSERT INTO Location (LocationName, LocationType) VALUES ('Atlantis', 'Sea');
-INSERT INTO Location (LocationName, LocationType) VALUES ('Verudon', 'City');
+INSERT INTO Locations (LocationName, LocationType) VALUES ('Floating City', 'Sky');
+INSERT INTO Locations (LocationName, LocationType) VALUES ('The Great Forest', 'Forest');
+INSERT INTO Locations (LocationName, LocationType) VALUES ('The End', 'Endgame');
+INSERT INTO Locations (LocationName, LocationType) VALUES ('Atlantis', 'Sea');
+INSERT INTO Locations (LocationName, LocationType) VALUES ('Verudon', 'City');
 
 INSERT INTO CoordinateLocations (Coordinates, LocationName) VALUES ('10-20-103', 'Floating City');
 INSERT INTO CoordinateLocations (Coordinates, LocationName) VALUES ('15-25-20', 'The Great Forest');
@@ -167,11 +184,11 @@ INSERT INTO Skill (SkillName, SkillType) VALUES ('End Shield', 'Defense');
 INSERT INTO Skill (SkillName, SkillType) VALUES ('Sea Wave', 'Attack');
 INSERT INTO Skill (SkillName, SkillType) VALUES ('City Guard', 'Defense');
 
-INSERT INTO Develops (SkillName, CharacterID, "Level") VALUES ('Sky Slash', 1382, 10);
-INSERT INTO Develops (SkillName, CharacterID, "Level") VALUES ('Forest Heal', 3312, 5);
-INSERT INTO Develops (SkillName, CharacterID, "Level") VALUES ('Forest Heal', 5869, 3);
-INSERT INTO Develops (SkillName, CharacterID, "Level") VALUES ('End Shield', 1129, 8);
-INSERT INTO Develops (SkillName, CharacterID, "Level") VALUES ('City Guard', 1269, 2);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Sky Slash', 1382, 10);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Forest Heal', 3312, 5);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Forest Heal', 5869, 3);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('End Shield', 1129, 8);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('City Guard', 1269, 2);
 
 INSERT INTO Player (CharacterID, InventoryID) VALUES (1382, 1001);
 INSERT INTO Player (CharacterID, InventoryID) VALUES (3312, 1002);
