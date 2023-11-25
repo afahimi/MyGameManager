@@ -42,7 +42,6 @@ const Home = () => {
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
 
-  // groupBy is ['Group By Attr', 'Aggregate Attr']
   const [groupBy, setGroupBy] = useState<any[]>([]);
   const [groupByOperation, setGroupByOperation] = useState<string>("");
 
@@ -60,6 +59,39 @@ const Home = () => {
     "UPDATE",
     "RAW QUERY",
   ];
+
+  const sanitizeInputs = (str: string) => {
+    const patterns = [
+        /--/,         
+        /;/,          
+        /'/,          
+        /"/,          
+        /\bDROP\b/i,  
+        /\bSELECT\b/i,
+        /\bINSERT\b/i,
+        /\bWHERE\b/i,
+        /\bFROM\b/i,
+        /\bDELETE\b/i,
+        /\bUPDATE\b/i,
+        /\bUNION\b/i, 
+        /\bALTER\b/i, 
+        /\bEXEC\b/i,  
+        /\bEXECUTE\b/i,
+        /\\/,         
+        /\bNULL\b/i,  
+        /%/i,         
+        /_/i          
+    ];
+
+
+    for (const pattern of patterns) {
+        if (pattern.test(str)) {
+            return ''; 
+        }
+    }
+
+    return str;
+  };
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
     if (checked) {
@@ -109,10 +141,12 @@ const Home = () => {
     return isNaN(num) ? str : num;
   };
 
-  const returnProperString = (key : string, value : string) => {
+  const returnProperString = (key: string, value: string) => {
     const converted = convertStringToIntIfPossible(value);
-    return typeof converted === "number" ? `${key} = ${converted}` : `${key} = '${converted}'`;
-  }
+    return typeof converted === "number"
+      ? `${key} = ${converted}`
+      : `${key} = '${converted}'`;
+  };
 
   const getTableAttributes = () => {
     if (result.length == 0) {
@@ -122,7 +156,6 @@ const Home = () => {
     return uniqueKeys;
   };
 
-  /* Make all query boxes independent */
   const handleInputChange = (fieldName: string, value: string) => {
     console.log(defaultQuery);
     setQuery((prevQuery) => ({
@@ -408,6 +441,49 @@ const Home = () => {
         </div>
       </div>
     ),
+    DIVISION: ( 
+      <>
+      <div className="inline-flex space-x-4">
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          Select
+        </h1>
+        <Form>
+          <div className={styles.project_form}>
+            {generateProjectElements(result)}
+            {generateProjectElements(joinTableResult, joinSelection)}
+          </div>
+        </Form>
+      </div>
+      <div className="inline-flex space-x-4">
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          From
+        </h1>
+        <Dropdown>
+          <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+            {joinSelection ? joinSelection : "Select Table"}
+          </Dropdown.Toggle>
+
+          <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+        </Dropdown>
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          , {currTable}
+        </h1>
+      </div>
+      <div className="inline-flex space-x-4 mt-4">
+        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          Where
+        </h1>
+        <Form>
+          <Form.Control
+            type="text"
+            placeholder="Enter condition"
+            value={defaultQuery}
+            onChange={(e) => setDefaultQuery(e.target.value)}
+          />
+        </Form>
+      </div>
+    </>
+    ),
     "RAW QUERY": (
       <>
         <Form>
@@ -426,14 +502,15 @@ const Home = () => {
   const handleExecuteQuery = async () => {
     setResult([]);
     let executeQuery = "";
+    let where_clause = "";
     switch (operation) {
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
-        let where_clause2 = defaultQuery ? `WHERE ${defaultQuery}` : "";
+        where_clause = defaultQuery ? ((sanitizeInputs(defaultQuery) !== "") ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
         executeQuery = `SELECT ${projectSelections.join(
           ","
-        )} FROM ${currTable} ${where_clause2}`;
+        )} FROM ${currTable} ${where_clause}`;
         break;
 
       case "INSERT":
@@ -468,6 +545,8 @@ const Home = () => {
           })
           .join(" AND ");
 
+        console.log(updateValues);
+
         let updates = Object.entries(updateValues)
           .filter(([key, value]) => value.trim() !== "")
           .map(([key, value]) => {
@@ -477,6 +556,7 @@ const Home = () => {
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
         await OracleServerRequest(executeQuery);
         executeQuery = `SELECT * FROM ${currTable}`;
+        setUpdateValues({});
         break;
 
       case "PROJECT":
@@ -488,7 +568,7 @@ const Home = () => {
 
       case "JOIN":
         setProjectSelections([]);
-        let where_clause = defaultQuery ? `WHERE ${defaultQuery}` : "";
+        where_clause = defaultQuery ? (sanitizeInputs(defaultQuery) !== "" ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
         executeQuery = `SELECT ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
