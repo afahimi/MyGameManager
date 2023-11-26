@@ -38,6 +38,7 @@ const Home = () => {
   const [currTable, setCurrTable] = useState("");
   const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
+  const [distinct, setDistinct] = useState<boolean>(false);
 
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
@@ -286,6 +287,14 @@ const Home = () => {
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Select
           </h1>
+          <Form.Check
+            type = "checkbox"
+            label = "Distinct"
+            checked = {distinct}
+            onChange = {(e) => 
+              setDistinct(e.target.checked)
+            }
+          />
           <Form>
             <div className={styles.project_form}>
               {generateProjectElements(result)}
@@ -571,7 +580,8 @@ const Home = () => {
       case "JOIN":
         setProjectSelections([]);
         where_clause = defaultQuery ? (sanitizeInputs(defaultQuery) !== "" ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
-        executeQuery = `SELECT ${projectSelections.join(
+        let distinctOn = distinct ? "DISTINCT" : "";
+        executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
         console.log(executeQuery);
@@ -624,6 +634,7 @@ const Home = () => {
                     className="mt-2"
                     onClick={() => {
                       changeVisibleTable(tableName.TABLE_NAME);
+                      setDistinct(false)
                     }}
                   >
                     {tableName.TABLE_NAME}
