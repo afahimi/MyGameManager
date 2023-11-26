@@ -44,7 +44,7 @@ function disconnectFromDB() {
 
 function executePlainSQL($cmdstr) { //takes a plain (no bound variables) SQL command and executes it
     //echo "<br>running ".$cmdstr."<br>";
-    global $db_conn, $success;
+    global $db_conn, $success, $e;
 
     $statement = OCIParse($db_conn, (string)$cmdstr);
     //There are a set of comments at the end of the file that describe some of the OCI specific functions and how they work
@@ -64,7 +64,7 @@ function executePlainSQL($cmdstr) { //takes a plain (no bound variables) SQL com
 }
 
 function handleQueryRequest($query) {
-    global $db_conn;
+    global $db_conn, $e;
     $target = $query;
 
     if (strpos($target, ';') !== false) {
@@ -79,8 +79,9 @@ function handleQueryRequest($query) {
     global $success;
     if(!$success) {
         $result = array();
+        $error_msg = isset($e['message']) ? $e['message'] : 'Unknown Error';
         $contents = array(
-            "result" => "Invalid Query",
+            "ERROR" => $error_msg,
         );
         array_push($result, $contents);
         echo json_encode($result);
