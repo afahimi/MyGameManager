@@ -49,6 +49,10 @@ const Home = () => {
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
+  interface OracleError {
+    ERROR : string;
+  }
+
   const operations = [
     "SELECT",
     "PROJECT",
@@ -239,6 +243,20 @@ const Home = () => {
 
   const getJoinSelectTable = async (tableName: string) => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
+  };
+
+  const errorHandle = (err : OracleError[]) => {
+
+      if(err && err.length > 0){
+        err.forEach( (element : OracleError) => {
+          if(element.ERROR){
+            console.log(element.ERROR)
+            return element.ERROR;
+          }
+        });
+      }
+      
+      return "";
   };
 
   const [field, setField] = useState<any[]>([]);
@@ -509,12 +527,14 @@ const Home = () => {
     ),
   };
 
+
   /* Given the values generate a query to execute and toss it to postRequest */
   const handleExecuteQuery = async () => {
     setResult([]);
     let executeQuery = "";
     let where_clause = "";
     switch (operation) {
+      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
@@ -533,8 +553,12 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
+
+        let insert_err = await OracleServerRequest(executeQuery);
+        if (errorHandle(insert_err) !== ""){
+            executeQuery = `SELECT * FROM ${currTable}`;
+        }
+
         break;
 
       case "DELETE":
@@ -565,8 +589,11 @@ const Home = () => {
           })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
+        
+        let update_err = await OracleServerRequest(executeQuery);
+        if(update_err !== ""){
+          executeQuery = `SELECT * FROM ${currTable}`;
+        }
         setUpdateValues({});
         break;
 

@@ -32,6 +32,8 @@ export async function OracleServerRequest(query: string) {
       requestOptions
     );
     
+    
+
     return result.json();
 }
 
