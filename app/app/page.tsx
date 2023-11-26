@@ -176,6 +176,8 @@ const Home = () => {
     setCurrTable(table_name);
     setDefaultQuery("");
     setQuery({});
+    setGroupByOperation("");
+    setGroupBy([]);
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
