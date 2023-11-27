@@ -44,13 +44,13 @@ const Home = () => {
   const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
   const [distinct, setDistinct] = useState<boolean>(false);
-  
+
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
-  
+
   const [groupBy, setGroupBy] = useState<any[]>([]);
   const [groupByOperation, setGroupByOperation] = useState<string>("");
-  
+
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
@@ -77,40 +77,39 @@ const Home = () => {
     "UPDATE",
     "RAW QUERY",
   ];
-  
+
   const sanitizeInputs = (str: string) => {
     const patterns = [
-      /--/,         
-      /;/,          
-      /'/,          
-      /"/,          
-      /\bDROP\b/i,  
+      /--/,
+      /;/,
+      /'/,
+      /"/,
+      /\bDROP\b/i,
       /\bSELECT\b/i,
       /\bINSERT\b/i,
       /\bWHERE\b/i,
       /\bFROM\b/i,
       /\bDELETE\b/i,
       /\bUPDATE\b/i,
-      /\bUNION\b/i, 
-      /\bALTER\b/i, 
-      /\bEXEC\b/i,  
+      /\bUNION\b/i,
+      /\bALTER\b/i,
+      /\bEXEC\b/i,
       /\bEXECUTE\b/i,
-      /\\/,         
-      /\bNULL\b/i,  
-      /%/i,         
-      /_/i          
+      /\\/,
+      /\bNULL\b/i,
+      /%/i,
+      /_/i,
     ];
-    
-    
+
     for (const pattern of patterns) {
       if (pattern.test(str)) {
-        return ''; 
+        return "";
       }
     }
-    
+
     return str;
   };
-  
+
   const convertStringToIntIfPossible = (str: string) => {
     
     if(/^\d+$/.test(str)) {
@@ -126,34 +125,33 @@ const Home = () => {
       ? `${key} = ${converted}`
       : `${key} = '${converted}'`;
   };
-  
-  const errorHandle = (err : OracleError[]) => {
 
-      if(err && err.length > 0){
-        for (const element of err) {
-          if(element.ERROR){
-            console.log(element.ERROR)
-            return element.ERROR;
-          }
-        };
+  const errorHandle = (err: OracleError[]) => {
+    if (err && err.length > 0) {
+      for (const element of err) {
+        if (element.ERROR) {
+          console.log(element.ERROR);
+          return element.ERROR;
+        }
       }
- 
-      return "";
+    }
+
+    return "";
   };
 
-  const requestResult = async (executeQuery : string) => {
+  const requestResult = async (executeQuery: string) => {
     const result = await OracleServerRequest(executeQuery);
-
-    if(errorHandle(result).length > 0){
+    console.log(result);
+    if (errorHandle(result).length > 0) {
       showAlert("FAILURE: error exists", 'fail');
       setResult(result);
-    }
-    else {
-      if(["INSERT", "DELETE", "UPDATE"].includes(operation)){
-        const updatedResult = await OracleServerRequest(`SELECT * FROM ${currTable}`);
+    } else {
+      if (["INSERT", "DELETE", "UPDATE"].includes(operation)) {
+        const updatedResult = await OracleServerRequest(
+          `SELECT * FROM ${currTable}`
+        );
         setResult(updatedResult);
-      }
-      else{
+      } else {
         setResult(result);
       }
       showAlert("SUCCESS!", 'success')
@@ -177,7 +175,7 @@ const Home = () => {
     } else {
       console.log("unchecked");
       setProjectSelections((prevSelections) =>
-      prevSelections.filter((item) => item !== key)
+        prevSelections.filter((item) => item !== key)
       );
     }
     console.log(projectSelections);
@@ -326,7 +324,6 @@ const Home = () => {
   const getJoinSelectTable = async (tableName: string) => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
-
 
   const [field, setField] = useState<any[]>([]);
 
@@ -495,7 +492,9 @@ const Home = () => {
                       <>
                         <Dropdown.Item
                           key={elem}
-                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                          onClick={() =>
+                            setGroupBy((old: any) => [elem, old[1]])
+                          }
                         >
                           {elem}
                         </Dropdown.Item>
@@ -507,11 +506,10 @@ const Home = () => {
             </Form>
           </div>
           )
-          
         </div>
-        
+
         <div className="flex justify-center items-center gap-2">
-        Group By
+          Group By
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -543,7 +541,6 @@ const Home = () => {
             tableAttrributes={getTableAttributes()}
             setAttrs={setAggrKeys}
           />
-
         </div>
       </div>
     ),
@@ -586,7 +583,9 @@ const Home = () => {
                       <>
                         <Dropdown.Item
                           key={elem}
-                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                          onClick={() =>
+                            setGroupBy((old: any) => [elem, old[1]])
+                          }
                         >
                           {elem}
                         </Dropdown.Item>
@@ -598,11 +597,10 @@ const Home = () => {
             </Form>
           </div>
           )
-          
         </div>
-        
+
         <div className="flex justify-center items-center gap-2">
-        Group By
+          Group By
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -634,7 +632,6 @@ const Home = () => {
             tableAttrributes={getTableAttributes()}
             setAttrs={setAggrKeys}
           />
-
         </div>
       </div>
     ),
@@ -755,7 +752,7 @@ const Home = () => {
             return returnProperString(key, value);
           })
           .join(", ");
-        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;        
+        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
         setUpdateValues({});
         break;
 
@@ -793,16 +790,59 @@ const Home = () => {
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable}`;
         } else {
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
-        } 
+        }
 
         if (whereHavingStr !== "") {
-          console.log(aggrKeys)
+          console.log(aggrKeys);
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
           executeQuery += `HAVING ${whereHavingStr}`;
         }
         console.log(executeQuery);
         break;
+
+      case "DIVISION":
+        const projections = projectSelections.join(", ");
+        executeQuery = `
+          CREATE OR REPLACE VIEW DIVIDEND AS
+          SELECT ITEMID, INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM PLAYER
+          NATURAL JOIN CHARACTERINFO
+          NATURAL JOIN CONTAINS;
+
+          CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
+          SELECT DISTINCT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY
+          FROM DIVIDEND;
+
+          CREATE OR REPLACE VIEW DIVISOR AS
+          SELECT DISTINCT ITEMID FROM ITEM;
+
+          CREATE OR REPLACE VIEW INTERMEDIATE AS
+          SELECT * FROM DIVISOR, TEMP_DIVIDEND
+          MINUS
+          SELECT * FROM DIVIDEND;
+
+          SELECT * FROM TEMP_DIVIDEND
+          MINUS
+          SELECT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM INTERMEDIATE;
+          `;
+
+        console.log(executeQuery);
+        break;
     }
+
+    // `
+    // CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
+    // SELECT DISTINCT ITEMNAME FROM ITEM;
+    // CREATE OR REPLACE VIEW DIVISOR AS
+    // SELECT DISTINCT ITEMID AS ITEMID FROM TEMP;
+    // CREATE OR REPLACE VIEW INTERMEDIATE AS
+    // SELECT * FROM DIVISOR, TEMP_DIVIDEND
+    // MINUS
+    // SELECT * FROM ITEM;
+
+    // SELECT DISTINCT ITEMNAME FROM ITEM
+    // MINUS
+    // SELECT DISTINCT ITEMNAME FROM INTERMEDIATE;
+    // `;
     requestResult(executeQuery);
   };
 
@@ -861,9 +901,7 @@ const Home = () => {
               </ButtonGroup>
             </div>
             <div className={styles.form}>
-              {operationUI[operation] 
-                ? operationUI[operation] 
-                : null}
+              {operationUI[operation] ? operationUI[operation] : null}
             </div>
             <div className="flex justify-center gap-2">
               <div className={styles.reset_btn}>
@@ -888,14 +926,14 @@ const Home = () => {
                 : "Select a table to view"}
             </div>
             <div className="text-cyan-800">
-              {operation 
-                ?`Current Operation: ${operation}` 
-                : null}
+              {operation ? `Current Operation: ${operation}` : null}
             </div>
             <div className={styles.table}>
-              {result.length > 0 
-                ? <DataTable data = {result}/> 
-                : <Spinner animation = "border"/>}
+              {result.length > 0 ? (
+                <DataTable data={result} />
+              ) : (
+                <Spinner animation="border" />
+              )}
             </div>
             <div className={styles.table}>
               {(() => {
