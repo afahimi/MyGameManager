@@ -75,7 +75,7 @@ DELETE CASCADE
 
 CREATE TABLE Inventory (
     InventoryID INT PRIMARY KEY,
-    InventorySize INT,
+    InventorySize INT
 );
 
 CREATE TABLE NonPlayableCharacter (

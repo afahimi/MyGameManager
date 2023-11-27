@@ -16,10 +16,11 @@ import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
 import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
-import { table } from "console";
+import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
+import { exec } from "child_process";
 
 const roboto = Roboto({
   weight: "400",
@@ -50,12 +51,14 @@ const Home = () => {
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
+  const [divisorColumn, setDivisorColumn] = useState<string>("");
+
   const [whereHavingStr, setWhereHavingStr] = useState("");
   const [aggrKeys, setAggrKeys] = useState<string[]>([]);
   
 
   interface OracleError {
-    ERROR : string;
+    ERROR: string;
   }
   /* Helper functions for error handling or input sanitizing */
   const operations = [
@@ -118,16 +121,35 @@ const Home = () => {
   const errorHandle = (err : OracleError[]) => {
 
       if(err && err.length > 0){
-        err.forEach( (element : OracleError) => {
+        for (const element of err) {
           if(element.ERROR){
             console.log(element.ERROR)
             return element.ERROR;
           }
-        });
+        };
       }
-      
+ 
       return "";
   };
+
+  const requestResult = async (executeQuery : string) => {
+    const result = await OracleServerRequest(executeQuery);
+
+    if(errorHandle(result).length > 0){
+      alert("FAILURE : error exists");
+      setResult(result);
+    }
+    else {
+      if(["INSERT", "DELETE", "UPDATE"].includes(operation)){
+        const updatedResult = await OracleServerRequest(`SELECT * FROM ${currTable}`);
+        setResult(updatedResult);
+      }
+      else{
+        setResult(result);
+      }
+      alert("SUCCESS !");
+    }
+  }
 
   /* ************************************************************ */
 
@@ -254,9 +276,31 @@ const Home = () => {
           onClick={() => {
             setJoinSelection(tableName.TABLE_NAME);
             getJoinSelectTable(tableName.TABLE_NAME);
+            setDivisorColumn("");
           }}
         >
           {tableName.TABLE_NAME}
+        </Dropdown.Item>
+      );
+    });
+  };
+
+  const generateDivisionMenuElements = () => {
+    if (joinTableResult.length === 0) {
+      return null;
+    }
+    const uniqueKeys = new Set(Object.keys(joinTableResult[0]));
+    const uniqueKeysArray = Array.from(uniqueKeys);
+
+    return uniqueKeysArray.map((key, index) => {
+      return (
+        <Dropdown.Item
+          key={`${key}-${index}`}
+          onClick={() => {
+            setDivisorColumn(key);
+          }}
+        >
+          {key}
         </Dropdown.Item>
       );
     });
@@ -310,12 +354,10 @@ const Home = () => {
             Select
           </h1>
           <Form.Check
-            type = "checkbox"
-            label = "Distinct"
-            checked = {distinct}
-            onChange = {(e) => 
-              setDistinct(e.target.checked)
-            }
+            type="checkbox"
+            label="Distinct"
+            checked={distinct}
+            onChange={(e) => setDistinct(e.target.checked)}
           />
           <Form>
             <div className={styles.project_form}>
@@ -575,48 +617,50 @@ const Home = () => {
         </div>
       </div>
     ),
-    DIVISION: ( 
+    DIVISION: (
       <>
-      <div className="inline-flex space-x-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Select
-        </h1>
-        <Form>
-          <div className={styles.project_form}>
-            {generateProjectElements(result)}
-            {generateProjectElements(joinTableResult, joinSelection)}
-          </div>
-        </Form>
-      </div>
-      <div className="inline-flex space-x-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          From
-        </h1>
-        <Dropdown>
-          <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-            {joinSelection ? joinSelection : "Select Table"}
-          </Dropdown.Toggle>
+        <div className="inline-flex space-x-4">
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Divide {currTable} by
+          </h1>
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              {joinSelection ? joinSelection : "Select Table"}
+            </Dropdown.Toggle>
 
-          <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
-        </Dropdown>
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          , {currTable}
-        </h1>
-      </div>
-      <div className="inline-flex space-x-4 mt-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Where
-        </h1>
-        <Form>
-          <Form.Control
-            type="text"
-            placeholder="Enter condition"
-            value={defaultQuery}
-            onChange={(e) => setDefaultQuery(e.target.value)}
-          />
-        </Form>
-      </div>
-    </>
+            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+          </Dropdown>
+          {joinSelection ? (
+            <>
+              <h1
+                className={`text-xl font text-slate-950 text-middle font-bold`}
+              >
+                column:
+              </h1>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {divisorColumn ? divisorColumn : "Select Divisor Column"}
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
+              </Dropdown>
+              <h1
+                className={`text-xl font text-slate-950 text-middle font-bold`}
+              >
+                as:
+              </h1>
+              <Form>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter column"
+                  value={defaultQuery}
+                  onChange={(e) => setDefaultQuery(e.target.value)}
+                />
+              </Form>
+            </>
+          ) : null}
+        </div>
+      </>
     ),
     "RAW QUERY": (
       <>
@@ -632,18 +676,20 @@ const Home = () => {
     ),
   };
 
-
   /* Given the values generate a query to execute and toss it to postRequest */
   const handleExecuteQuery = async () => {
     setResult([]);
     let executeQuery = "";
     let where_clause = "";
     switch (operation) {
-      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
-        where_clause = defaultQuery ? ((sanitizeInputs(defaultQuery) !== "") ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
+        where_clause = defaultQuery
+          ? sanitizeInputs(defaultQuery) !== ""
+            ? `WHERE ${sanitizeInputs(defaultQuery)}`
+            : ""
+          : "";
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable} ${where_clause}`;
@@ -663,7 +709,7 @@ const Home = () => {
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
 
         let insert_err = await OracleServerRequest(executeQuery);
-        if (errorHandle(insert_err) !== ""){
+        if (errorHandle(insert_err) !== "") {
           executeQuery = `SELECT * FROM ${currTable}`;
         }
 
@@ -677,11 +723,6 @@ const Home = () => {
           .join(" AND ");
 
         executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
-
-        let delete_err = await OracleServerRequest(executeQuery);
-        if(errorHandle(delete_err) !== ""){
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
         break;
 
       case "UPDATE":
@@ -699,15 +740,7 @@ const Home = () => {
             return returnProperString(key, value);
           })
           .join(", ");
-        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-        // executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow};`;
-        
-        
-        let update_err = await OracleServerRequest(executeQuery);
-        if(errorHandle(update_err) !== ""){
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
-
+        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;        
         setUpdateValues({});
         break;
 
@@ -720,12 +753,15 @@ const Home = () => {
 
       case "JOIN":
         setProjectSelections([]);
-        where_clause = defaultQuery ? (sanitizeInputs(defaultQuery) !== "" ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
+        where_clause = defaultQuery
+          ? sanitizeInputs(defaultQuery) !== ""
+            ? `WHERE ${sanitizeInputs(defaultQuery)}`
+            : ""
+          : "";
         let distinctOn = distinct ? "DISTINCT" : "";
         executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
-        console.log(executeQuery);
         break;
 
       case "RAW QUERY":
@@ -746,26 +782,22 @@ const Home = () => {
         }
         console.log(executeQuery);
         break;
-      case "NESTED_AGGREGATION":
-        
-
     }
-    console.log(executeQuery);
-    setResult(await OracleServerRequest(executeQuery));
+    requestResult(executeQuery);
+
+
+    // console.log(executeQuery);
+    // setResult(await OracleServerRequest(executeQuery));
+    // let result_err = await OracleServerRequest(executeQuery);
+    // console.log(result_err);
+    // if(errorHandle(result_err).length > 0){
+    //   alert("SUCCESS");
+    // }
+    // else{
+    //   alert("FAILURE : error exists")
+    // }
+    // setResult(result_err);
   };
-
-  // function handleDebugSubmit(event: any) {
-  //   OracleServerRequest(event.message);
-  //   event?.preventDefault();
-  // }
-
-  // const getTableResults = (result: any) => {
-  //   if (result.length > 0) {
-  //     return <DataTable data={result} />;
-  //   } else {
-  //     return <Spinner animation="border" />;
-  //   }
-  // };
 
   return (
     <>
@@ -852,9 +884,16 @@ const Home = () => {
                 : <Spinner animation = "border"/>}
             </div>
             <div className={styles.table}>
-                {operation === 'JOIN' && joinTableResult.length > 0 
-                  ? <DataTable data={joinTableResult} /> 
-                  : null}
+              {(() => {
+                if (
+                  joinTableResult.length > 0 &&
+                  (operation === "JOIN" || operation === "DIVISION")
+                ) {
+                  return <DataTable data={joinTableResult} />;
+                } else {
+                  return <></>;
+                }
+              })()}
             </div>
           </div>
         </div>
