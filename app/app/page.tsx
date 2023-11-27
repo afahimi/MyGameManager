@@ -52,9 +52,11 @@ const Home = () => {
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
   const [divisorColumn, setDivisorColumn] = useState<string>("");
+
+  const [whereHavingStr, setWhereHavingStr] = useState("");
+  const [aggrKeys, setAggrKeys] = useState<string[]>([]);
   
-  const [operator, setOperator] = useState<string>("");
-  const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
+
   interface OracleError {
     ERROR: string;
   }
@@ -223,6 +225,7 @@ const Home = () => {
     setQuery({});
     setGroupByOperation("");
     setGroupBy([]);
+    setWhereHavingStr("");
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -333,12 +336,11 @@ const Home = () => {
           </h1>
         </div>
         <div className="inline-flex space-x-4">
+          WHERE
           <WhereHaving
             isWhere={false}
-            op={operator}
-            opSetVal={setOperator} 
-            opStates={operatorStates}
-            setOpStates={setOperatorStates}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
             tableAttrributes={getTableAttributes()}
           />
         </div>
@@ -511,15 +513,108 @@ const Home = () => {
             </Dropdown>
           </Form>
         </div>
-        <WhereHaving
-          isWhere={true}
-          op={operator}
-          opSetVal={setOperator} 
-          opStates={operatorStates}
-          setOpStates={setOperatorStates}
-          tableAttrributes={getTableAttributes()}
-        />
+        <div className="inline-flex space-x-4">
+          HAVING
+          <WhereHaving
+            isWhere={false}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
+            tableAttrributes={getTableAttributes()}
+            setAttrs={setAggrKeys}
+          />
+
+        </div>
+      </div>
+    ),
+    NESTED_AGGREGATION: (
+      <div className="">
+        <div className="flex justify-center items-center gap-2">
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupByOperation}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {AGGREGATION_OPS.map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupByOperation(elem)}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          (
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupBy[0]}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {Array.from(getTableAttributes()).map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          )
+          
+        </div>
         
+        <div className="flex justify-center items-center gap-2">
+        Group By
+          <Form>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {groupBy[1]}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {Array.from(getTableAttributes()).map((elem) => {
+                  return (
+                    <>
+                      <Dropdown.Item
+                        key={`2-${elem}`}
+                        onClick={() => setGroupBy((old: any) => [old[0], elem])}
+                      >
+                        {elem}
+                      </Dropdown.Item>
+                    </>
+                  );
+                })}
+              </Dropdown.Menu>
+            </Dropdown>
+          </Form>
+        </div>
+        <div className="inline-flex space-x-4">
+          HAVING
+          <WhereHaving
+            isWhere={false}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
+            tableAttrributes={getTableAttributes()}
+            setAttrs={setAggrKeys}
+          />
+
+        </div>
       </div>
     ),
     DIVISION: (
@@ -598,9 +693,8 @@ const Home = () => {
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable} ${where_clause}`;
-        console.log(operatorStates)
-        if (operatorStates[0] !== "") {
-          executeQuery += `WHERE ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        if (whereHavingStr !== "") {
+          executeQuery += `WHERE ${whereHavingStr}`;
         }
         break;
 
@@ -672,33 +766,14 @@ const Home = () => {
         if (groupBy[1] == undefined) {
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable}`;
         } else {
-          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
         } 
 
-        if (operatorStates[0] !== "") {
-          executeQuery += `HAVING ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        if (whereHavingStr !== "") {
+          console.log(aggrKeys)
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
+          executeQuery += `HAVING ${whereHavingStr}`;
         }
-        break;
-
-      case "DIVISION":
-        const projections = projectSelections.join(", ");
-        executeQuery = 
-        `
-        CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
-        SELECT DISTINCT ITEMNAME FROM ITEM;
-
-        CREATE OR REPLACE VIEW DIVISOR AS
-        SELECT DISTINCT ITEMID AS ITEMID FROM TEMP;
-
-        CREATE OR REPLACE VIEW INTERMEDIATE AS
-        SELECT * FROM DIVISOR, TEMP_DIVIDEND
-        MINUS
-        SELECT * FROM ITEM;
-        
-        SELECT DISTINCT ITEMNAME FROM ITEM
-        MINUS
-        SELECT DISTINCT ITEMNAME FROM INTERMEDIATE;
-        `;
         console.log(executeQuery);
         break;
     }
@@ -720,17 +795,19 @@ const Home = () => {
             <ListGroup as={"ul"}>
               {tableNames.map((tableName: any, count) => {
                 return (
-                  <ListGroup.Item
-                    key={count}
-                    as={"li"}
-                    className="mt-2"
-                    onClick={() => {
-                      changeVisibleTable(tableName.TABLE_NAME);
-                      setDistinct(false);
-                    }}
-                  >
-                    {tableName.TABLE_NAME}
-                  </ListGroup.Item>
+                  <div className="table-item" key={`${tableName.TABLE_NAME}`}>
+                    <ListGroup.Item
+                      key={`count${tableName}`}
+                      as={"li"}
+                      className="mt-2"
+                      onClick={() => {
+                        changeVisibleTable(tableName.TABLE_NAME);
+                        setDistinct(false)
+                      }}
+                    >
+                      {tableName.TABLE_NAME}
+                    </ListGroup.Item>
+                  </div>
                 );
               })}
             </ListGroup>
