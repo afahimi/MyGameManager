@@ -12,6 +12,9 @@ import Spinner from "react-bootstrap/Spinner";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
 
+import Alert from "./components/Alert.tsx";
+import { AlertProperty } from "./components/Alert.tsx";
+
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
 import { getAllTableNames, getTableData } from "./utils/functions";
@@ -55,6 +58,8 @@ const Home = () => {
 
   const [whereHavingStr, setWhereHavingStr] = useState("");
   const [aggrKeys, setAggrKeys] = useState<string[]>([]);
+
+  const [alert, setAlert] = useState<AlertProperty>({ isVisible: false, msg: '', op_result: 'success'});
   
 
   interface OracleError {
@@ -107,8 +112,12 @@ const Home = () => {
   };
   
   const convertStringToIntIfPossible = (str: string) => {
-    var num = parseInt(str, 10);
-    return isNaN(num) ? str : num;
+    
+    if(/^\d+$/.test(str)) {
+      return parseInt(str, 10);
+    }
+
+    return str;
   };
 
   const returnProperString = (key: string, value: string) => {
@@ -136,7 +145,7 @@ const Home = () => {
     const result = await OracleServerRequest(executeQuery);
 
     if(errorHandle(result).length > 0){
-      alert("FAILURE : error exists");
+      showAlert("FAILURE: error exists", 'fail');
       setResult(result);
     }
     else {
@@ -147,9 +156,17 @@ const Home = () => {
       else{
         setResult(result);
       }
-      alert("SUCCESS !");
+      showAlert("SUCCESS!", 'success')
     }
   }
+
+  const showAlert = (msg: string, op_result: 'success' | 'fail') => {
+    setAlert({ isVisible: true, msg, op_result });
+
+    setTimeout(() => {
+        setAlert({ isVisible: false, msg: '', op_result: 'success' });
+    }, 2000);
+};
 
   /* ************************************************************ */
 
@@ -382,10 +399,14 @@ const Home = () => {
           </h1>
         </div>
         <div className="inline-flex space-x-4 mt-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Where
-          </h1>
-  
+          WHERE
+          <WhereHaving
+            isWhere={false}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
+            tableAttrributes={getTableAttributes()}
+            setAttrs={setAggrKeys}
+          />
 
         </div>
       </>
@@ -756,6 +777,11 @@ const Home = () => {
         executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
+
+        if (whereHavingStr !== "") {
+          executeQuery += `WHERE ${whereHavingStr}`;
+        }
+        
         break;
 
       case "RAW QUERY":
@@ -782,6 +808,7 @@ const Home = () => {
 
   return (
     <>
+
       <div className={styles.container}>
         <div className="flex h-full w-full text-slate-900">
           <div className="bg-slate-200 h-full mr-3">
@@ -814,6 +841,7 @@ const Home = () => {
           </div>
 
           <div>
+          <Alert isVisible={alert.isVisible} msg={alert.msg} op_result={alert.op_result} />
             <div className={styles.btn_group}>
               <ButtonGroup aria-label="Basic example">
                 {operations.map((operation, count) => {
