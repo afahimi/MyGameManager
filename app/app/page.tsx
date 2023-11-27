@@ -163,7 +163,7 @@ const Home = () => {
 
     setTimeout(() => {
         setAlert({ isVisible: false, msg: '', op_result: 'success' });
-    }, 2000);
+    }, 3500);
 };
 
   /* ************************************************************ */
