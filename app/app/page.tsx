@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from "./hooks";
 import { table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
+import WhereHaving from "./components/where_having.tsx";
 
 const roboto = Roboto({
   weight: "400",
@@ -49,6 +50,8 @@ const Home = () => {
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
   
+  const [operator, setOperator] = useState<string>("");
+  const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
   interface OracleError {
     ERROR : string;
   }
@@ -285,17 +288,14 @@ const Home = () => {
           </h1>
         </div>
         <div className="inline-flex space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Where
-          </h1>
-          <Form>
-            <Form.Control
-              type="text"
-              placeholder="Enter condition"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form>
+          <WhereHaving
+            isWhere={false}
+            op={operator}
+            opSetVal={setOperator} 
+            opStates={operatorStates}
+            setOpStates={setOperatorStates}
+            tableAttrributes={getTableAttributes()}
+          />
         </div>
       </>
     ),
@@ -340,14 +340,8 @@ const Home = () => {
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Where
           </h1>
-          <Form>
-            <Form.Control
-              type="text"
-              placeholder="Enter condition"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form>
+  
+
         </div>
       </>
     ),
@@ -397,56 +391,61 @@ const Home = () => {
     ),
 
     AGGREGATION: (
-      <div className="flex justify-center items-center gap-2">
-        Group
-        <div>
-          <Form>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {groupByOperation}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {AGGREGATION_OPS.map((elem) => {
-                  return (
-                    <>
-                      <Dropdown.Item
-                        key={elem}
-                        onClick={() => setGroupByOperation(elem)}
-                      >
-                        {elem}
-                      </Dropdown.Item>
-                    </>
-                  );
-                })}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Form>
+      <div className="">
+        <div className="flex justify-center items-center gap-2">
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupByOperation}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {AGGREGATION_OPS.map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupByOperation(elem)}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          (
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupBy[0]}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {Array.from(getTableAttributes()).map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          )
+          
         </div>
-        <div>
-          <Form>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {groupBy[0]}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {Array.from(getTableAttributes()).map((elem) => {
-                  return (
-                    <>
-                      <Dropdown.Item
-                        key={elem}
-                        onClick={() => setGroupBy((old: any) => [elem, old[1]])}
-                      >
-                        {elem}
-                      </Dropdown.Item>
-                    </>
-                  );
-                })}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Form>
-        </div>
-        By
-        <div>
+        
+        <div className="flex justify-center items-center gap-2">
+        Group By
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -469,6 +468,15 @@ const Home = () => {
             </Dropdown>
           </Form>
         </div>
+        <WhereHaving
+          isWhere={true}
+          op={operator}
+          opSetVal={setOperator} 
+          opStates={operatorStates}
+          setOpStates={setOperatorStates}
+          tableAttrributes={getTableAttributes()}
+        />
+        
       </div>
     ),
     DIVISION: ( 
@@ -543,6 +551,10 @@ const Home = () => {
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable} ${where_clause}`;
+        console.log(operatorStates)
+        if (operatorStates[0] !== "") {
+          executeQuery += `WHERE ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        }
         break;
 
       case "INSERT":
@@ -624,7 +636,15 @@ const Home = () => {
         break;
 
       case "AGGREGATION":
-        executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
+        if (groupBy[1] == undefined) {
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable}`;
+        } else {
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
+        } 
+
+        if (operatorStates[0] !== "") {
+          executeQuery += `HAVING ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        }
         console.log(executeQuery);
         break;
     }
