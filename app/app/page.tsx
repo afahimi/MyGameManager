@@ -651,19 +651,6 @@ const Home = () => {
         break;
     }
     requestResult(executeQuery);
-
-
-    // console.log(executeQuery);
-    // setResult(await OracleServerRequest(executeQuery));
-    // let result_err = await OracleServerRequest(executeQuery);
-    // console.log(result_err);
-    // if(errorHandle(result_err).length > 0){
-    //   alert("SUCCESS");
-    // }
-    // else{
-    //   alert("FAILURE : error exists")
-    // }
-    // setResult(result_err);
   };
 
   return (
