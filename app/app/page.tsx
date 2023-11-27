@@ -49,8 +49,10 @@ const Home = () => {
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
+  const [divisorColumn, setDivisorColumn] = useState<string>("");
+
   interface OracleError {
-    ERROR : string;
+    ERROR: string;
   }
 
   const operations = [
@@ -67,32 +69,31 @@ const Home = () => {
 
   const sanitizeInputs = (str: string) => {
     const patterns = [
-        /--/,         
-        /;/,          
-        /'/,          
-        /"/,          
-        /\bDROP\b/i,  
-        /\bSELECT\b/i,
-        /\bINSERT\b/i,
-        /\bWHERE\b/i,
-        /\bFROM\b/i,
-        /\bDELETE\b/i,
-        /\bUPDATE\b/i,
-        /\bUNION\b/i, 
-        /\bALTER\b/i, 
-        /\bEXEC\b/i,  
-        /\bEXECUTE\b/i,
-        /\\/,         
-        /\bNULL\b/i,  
-        /%/i,         
-        /_/i          
+      /--/,
+      /;/,
+      /'/,
+      /"/,
+      /\bDROP\b/i,
+      /\bSELECT\b/i,
+      /\bINSERT\b/i,
+      /\bWHERE\b/i,
+      /\bFROM\b/i,
+      /\bDELETE\b/i,
+      /\bUPDATE\b/i,
+      /\bUNION\b/i,
+      /\bALTER\b/i,
+      /\bEXEC\b/i,
+      /\bEXECUTE\b/i,
+      /\\/,
+      /\bNULL\b/i,
+      /%/i,
+      /_/i,
     ];
 
-
     for (const pattern of patterns) {
-        if (pattern.test(str)) {
-            return ''; 
-        }
+      if (pattern.test(str)) {
+        return "";
+      }
     }
 
     return str;
@@ -241,22 +242,42 @@ const Home = () => {
     });
   };
 
+  const generateDivisionMenuElements = () => {
+    if (joinTableResult.length === 0) {
+      return null;
+    }
+    const uniqueKeys = new Set(Object.keys(joinTableResult[0]));
+    const uniqueKeysArray = Array.from(uniqueKeys);
+
+    return uniqueKeysArray.map((key, index) => {
+      return (
+        <Dropdown.Item
+          key={`${key}-${index}`}
+          onClick={() => {
+            setDivisorColumn(key);
+          }}
+        >
+          {key}
+        </Dropdown.Item>
+      );
+    });
+  };
+
   const getJoinSelectTable = async (tableName: string) => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
 
-  const errorHandle = (err : OracleError[]) => {
+  const errorHandle = (err: OracleError[]) => {
+    if (err && err.length > 0) {
+      err.forEach((element: OracleError) => {
+        if (element.ERROR) {
+          console.log(element.ERROR);
+          return element.ERROR;
+        }
+      });
+    }
 
-      if(err && err.length > 0){
-        err.forEach( (element : OracleError) => {
-          if(element.ERROR){
-            console.log(element.ERROR)
-            return element.ERROR;
-          }
-        });
-      }
-      
-      return "";
+    return "";
   };
 
   const [field, setField] = useState<any[]>([]);
@@ -306,12 +327,10 @@ const Home = () => {
             Select
           </h1>
           <Form.Check
-            type = "checkbox"
-            label = "Distinct"
-            checked = {distinct}
-            onChange = {(e) => 
-              setDistinct(e.target.checked)
-            }
+            type="checkbox"
+            label="Distinct"
+            checked={distinct}
+            onChange={(e) => setDistinct(e.target.checked)}
           />
           <Form>
             <div className={styles.project_form}>
@@ -470,48 +489,37 @@ const Home = () => {
         </div>
       </div>
     ),
-    DIVISION: ( 
+    DIVISION: (
       <>
-      <div className="inline-flex space-x-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Select
-        </h1>
-        <Form>
-          <div className={styles.project_form}>
-            {generateProjectElements(result)}
-            {generateProjectElements(joinTableResult, joinSelection)}
-          </div>
-        </Form>
-      </div>
-      <div className="inline-flex space-x-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          From
-        </h1>
-        <Dropdown>
-          <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-            {joinSelection ? joinSelection : "Select Table"}
-          </Dropdown.Toggle>
+        <div className="inline-flex space-x-4">
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Divide {currTable} by
+          </h1>
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              {joinSelection ? joinSelection : "Select Table"}
+            </Dropdown.Toggle>
 
-          <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
-        </Dropdown>
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          , {currTable}
-        </h1>
-      </div>
-      <div className="inline-flex space-x-4 mt-4">
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Where
-        </h1>
-        <Form>
-          <Form.Control
-            type="text"
-            placeholder="Enter condition"
-            value={defaultQuery}
-            onChange={(e) => setDefaultQuery(e.target.value)}
-          />
-        </Form>
-      </div>
-    </>
+            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+          </Dropdown>
+          {joinSelection ? (
+            <>
+              <h1
+                className={`text-xl font text-slate-950 text-middle font-bold`}
+              >
+                column:
+              </h1>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {divisorColumn ? divisorColumn : "Select Divisor Column"}
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
+              </Dropdown>
+            </>
+          ) : null}
+        </div>
+      </>
     ),
     "RAW QUERY": (
       <>
@@ -527,18 +535,20 @@ const Home = () => {
     ),
   };
 
-
   /* Given the values generate a query to execute and toss it to postRequest */
   const handleExecuteQuery = async () => {
     setResult([]);
     let executeQuery = "";
     let where_clause = "";
     switch (operation) {
-      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
-        where_clause = defaultQuery ? ((sanitizeInputs(defaultQuery) !== "") ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
+        where_clause = defaultQuery
+          ? sanitizeInputs(defaultQuery) !== ""
+            ? `WHERE ${sanitizeInputs(defaultQuery)}`
+            : ""
+          : "";
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable} ${where_clause}`;
@@ -555,8 +565,8 @@ const Home = () => {
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
 
         let insert_err = await OracleServerRequest(executeQuery);
-        if (errorHandle(insert_err) !== ""){
-            executeQuery = `SELECT * FROM ${currTable}`;
+        if (errorHandle(insert_err) !== "") {
+          executeQuery = `SELECT * FROM ${currTable}`;
         }
 
         break;
@@ -589,9 +599,9 @@ const Home = () => {
           })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-        
+
         let update_err = await OracleServerRequest(executeQuery);
-        if(update_err !== ""){
+        if (update_err !== "") {
           executeQuery = `SELECT * FROM ${currTable}`;
         }
         setUpdateValues({});
@@ -606,7 +616,11 @@ const Home = () => {
 
       case "JOIN":
         setProjectSelections([]);
-        where_clause = defaultQuery ? (sanitizeInputs(defaultQuery) !== "" ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
+        where_clause = defaultQuery
+          ? sanitizeInputs(defaultQuery) !== ""
+            ? `WHERE ${sanitizeInputs(defaultQuery)}`
+            : ""
+          : "";
         let distinctOn = distinct ? "DISTINCT" : "";
         executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
@@ -622,9 +636,30 @@ const Home = () => {
         executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
         console.log(executeQuery);
         break;
+
+      case "DIVISION":
+        const projections = projectSelections.join(", ");
+        executeQuery = `
+        SELECT *
+        FROM ${currTable}
+        WHERE NOT EXISTS 
+        (
+          SELECT ${projections}
+          FROM ${joinSelection}
+          EXCEPT
+          (
+            SELECT ${projections}
+            FROM ${currTable}
+          )
+        )
+        `;
+        console.log(executeQuery);
+        break;
     }
     console.log(executeQuery);
-    setResult(await OracleServerRequest(executeQuery));
+    const result = await OracleServerRequest(executeQuery);
+    console.log(result);
+    setResult(result);
   };
 
   function handleDebugSubmit(event: any) {
@@ -661,7 +696,7 @@ const Home = () => {
                     className="mt-2"
                     onClick={() => {
                       changeVisibleTable(tableName.TABLE_NAME);
-                      setDistinct(false)
+                      setDistinct(false);
                     }}
                   >
                     {tableName.TABLE_NAME}
@@ -716,7 +751,10 @@ const Home = () => {
             <div className={styles.table}>{getTableResults(result)}</div>
             <div className={styles.table}>
               {(() => {
-                if (joinTableResult.length > 0 && operation === "JOIN") {
+                if (
+                  joinTableResult.length > 0 &&
+                  (operation === "JOIN" || operation === "DIVISION")
+                ) {
                   return <DataTable data={joinTableResult} />;
                 } else {
                   return <></>;
