@@ -48,6 +48,10 @@
   margin: 10px;
 }
 
-.table-item {
+.table_item {
   cursor: pointer;
+}
+
+.table_item:hover {
+  color: rgb(63, 118, 176);
 }

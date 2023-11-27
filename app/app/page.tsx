@@ -811,33 +811,34 @@ const Home = () => {
 
       <div className={styles.container}>
         <div className="flex h-full w-full text-slate-900">
-          <div className="bg-slate-200 h-full mr-3">
+          <div className="bg-slate-200 h-full mr-3 p-2 overflow-y-scroll">
             <h1
-              className={`p-5 text-3xl font-onest text-slate-950 ${
+              className={`p-12 text-3xl font-onest text-slate-950 ${
                 sideMenuVisible ? "" : "hidden"
               }`}
             >
               Database Query
             </h1>
-            <ListGroup as={"ul"}>
-              {tableNames.map((tableName: any, count) => {
-                return (
-                  <div className="table-item" key={`${tableName.TABLE_NAME}`}>
-                    <ListGroup.Item
-                      key={`count${tableName}`}
-                      as={"li"}
-                      className="mt-2"
-                      onClick={() => {
-                        changeVisibleTable(tableName.TABLE_NAME);
-                        setDistinct(false)
-                      }}
-                    >
-                      {tableName.TABLE_NAME}
-                    </ListGroup.Item>
-                  </div>
-                );
-              })}
-            </ListGroup>
+            Tables:
+              <ListGroup as={"ul"}>
+                {tableNames.map((tableName: any, count) => {
+                  return (
+                    <div className={styles.table_item} key={`${tableName.TABLE_NAME}`}>
+                      <ListGroup.Item
+                        key={`count${tableName}`}
+                        as={"li"}
+                        className="mt-2"
+                        onClick={() => {
+                          changeVisibleTable(tableName.TABLE_NAME);
+                          setDistinct(false)
+                        }}
+                      >
+                         <div className={styles.table_item}>{tableName.TABLE_NAME}</div>
+                      </ListGroup.Item>
+                    </div>
+                  );
+                })}
+              </ListGroup>
           </div>
 
           <div>
@@ -864,19 +865,23 @@ const Home = () => {
                 ? operationUI[operation] 
                 : null}
             </div>
-            <div className={styles.reset_btn}>
-              <Button
-                onClick={() => {
-                  changeVisibleTable(currTable);
-                }}
-                variant="outline-primary"
-              >
-                Reset View
-              </Button>
+            <div className="flex justify-center gap-2">
+              <div className={styles.reset_btn}>
+                <Button
+                  onClick={() => {
+                    changeVisibleTable(currTable);
+                  }}
+                  variant="outline-danger"
+                >
+                  Reset View
+                </Button>
+              </div>
+              <div className={styles.reset_btn}>
+                <Button onClick={handleExecuteQuery} variant="outline-primary">
+                  Execute Query
+                </Button>
+              </div>
             </div>
-            <Button onClick={handleExecuteQuery} variant="outline-primary">
-              Execute Query
-            </Button>
             <div className="text-cyan-800">
               {currTable
                 ? `Current Table: ${currTable}`
