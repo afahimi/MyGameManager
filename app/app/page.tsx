@@ -50,6 +50,8 @@ const Home = () => {
   
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
+
+  const [divisorColumn, setDivisorColumn] = useState<string>("");
   
   const [operator, setOperator] = useState<string>("");
   const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
@@ -271,6 +273,7 @@ const Home = () => {
           onClick={() => {
             setJoinSelection(tableName.TABLE_NAME);
             getJoinSelectTable(tableName.TABLE_NAME);
+            setDivisorColumn("");
           }}
         >
           {tableName.TABLE_NAME}
@@ -546,6 +549,19 @@ const Home = () => {
 
                 <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
               </Dropdown>
+              <h1
+                className={`text-xl font text-slate-950 text-middle font-bold`}
+              >
+                as:
+              </h1>
+              <Form>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter column"
+                  value={defaultQuery}
+                  onChange={(e) => setDefaultQuery(e.target.value)}
+                />
+              </Form>
             </>
           ) : null}
         </div>
@@ -597,6 +613,12 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
+
+        let insert_err = await OracleServerRequest(executeQuery);
+        if (errorHandle(insert_err) !== "") {
+          executeQuery = `SELECT * FROM ${currTable}`;
+        }
+
         break;
 
       case "DELETE":
@@ -666,19 +688,22 @@ const Home = () => {
 
       case "DIVISION":
         const projections = projectSelections.join(", ");
-        executeQuery = `
-        SELECT *
-        FROM ${currTable}
-        WHERE NOT EXISTS 
-        (
-          SELECT ${projections}
-          FROM ${joinSelection}
-          EXCEPT
-          (
-            SELECT ${projections}
-            FROM ${currTable}
-          )
-        )
+        executeQuery = 
+        `
+        CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
+        SELECT DISTINCT ITEMNAME FROM ITEM;
+
+        CREATE OR REPLACE VIEW DIVISOR AS
+        SELECT DISTINCT ITEMID AS ITEMID FROM TEMP;
+
+        CREATE OR REPLACE VIEW INTERMEDIATE AS
+        SELECT * FROM DIVISOR, TEMP_DIVIDEND
+        MINUS
+        SELECT * FROM ITEM;
+        
+        SELECT DISTINCT ITEMNAME FROM ITEM
+        MINUS
+        SELECT DISTINCT ITEMNAME FROM INTERMEDIATE;
         `;
         console.log(executeQuery);
         break;
@@ -782,9 +807,16 @@ const Home = () => {
                 : <Spinner animation = "border"/>}
             </div>
             <div className={styles.table}>
-                {operation === 'JOIN' && joinTableResult.length > 0 
-                  ? <DataTable data={joinTableResult} /> 
-                  : null}
+              {(() => {
+                if (
+                  joinTableResult.length > 0 &&
+                  (operation === "JOIN" || operation === "DIVISION")
+                ) {
+                  return <DataTable data={joinTableResult} />;
+                } else {
+                  return <></>;
+                }
+              })()}
             </div>
           </div>
         </div>
