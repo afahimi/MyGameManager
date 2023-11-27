@@ -613,12 +613,6 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
-
-        let insert_err = await OracleServerRequest(executeQuery);
-        if (errorHandle(insert_err) !== "") {
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
-
         break;
 
       case "DELETE":
