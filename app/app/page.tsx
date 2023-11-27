@@ -16,10 +16,11 @@ import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
 import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
-import { table } from "console";
+import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
+import { exec } from "child_process";
 
 const roboto = Roboto({
   weight: "400",
@@ -116,15 +117,35 @@ const Home = () => {
   const errorHandle = (err : OracleError[]) => {
 
       if(err && err.length > 0){
-        err.forEach( (element : OracleError) => {
+        for (const element of err) {
           if(element.ERROR){
             console.log(element.ERROR)
             return element.ERROR;
           }
-        });
+        };
       }
+ 
       return "";
   };
+
+  const requestResult = async (executeQuery : string) => {
+    const result = await OracleServerRequest(executeQuery);
+
+    if(errorHandle(result).length > 0){
+      alert("FAILURE : error exists");
+      setResult(result);
+    }
+    else {
+      if(["INSERT", "DELETE", "UPDATE"].includes(operation)){
+        const updatedResult = await OracleServerRequest(`SELECT * FROM ${currTable}`);
+        setResult(updatedResult);
+      }
+      else{
+        setResult(result);
+      }
+      alert("SUCCESS !");
+    }
+  }
 
   /* ************************************************************ */
 
@@ -566,12 +587,6 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
-
-        let insert_err = await OracleServerRequest(executeQuery);
-        if (errorHandle(insert_err) !== ""){
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
-
         break;
 
       case "DELETE":
@@ -582,11 +597,6 @@ const Home = () => {
           .join(" AND ");
 
         executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
-
-        let delete_err = await OracleServerRequest(executeQuery);
-        if(errorHandle(delete_err) !== ""){
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
         break;
 
       case "UPDATE":
@@ -605,12 +615,6 @@ const Home = () => {
           })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;        
-        
-        let update_err = await OracleServerRequest(executeQuery);
-        if(errorHandle(update_err) !== ""){
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
-
         setUpdateValues({});
         break;
 
@@ -628,7 +632,6 @@ const Home = () => {
         executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
-        console.log(executeQuery);
         break;
 
       case "RAW QUERY":
@@ -645,34 +648,23 @@ const Home = () => {
         if (operatorStates[0] !== "") {
           executeQuery += `HAVING ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
         }
-        console.log(executeQuery);
         break;
     }
-    console.log(executeQuery);
-    setResult(await OracleServerRequest(executeQuery));
+    requestResult(executeQuery);
+
+
+    // console.log(executeQuery);
+    // setResult(await OracleServerRequest(executeQuery));
     // let result_err = await OracleServerRequest(executeQuery);
-    // if(errorHandle(result_err) !== ""){
-    //   alert("SUCCESS !");
-    //   setResult(result_err);
+    // console.log(result_err);
+    // if(errorHandle(result_err).length > 0){
+    //   alert("SUCCESS");
     // }
     // else{
-    //   alert("FAIL : error exists");
-    //   setResult(result_err);
+    //   alert("FAILURE : error exists")
     // }
+    // setResult(result_err);
   };
-
-  // function handleDebugSubmit(event: any) {
-  //   OracleServerRequest(event.message);
-  //   event?.preventDefault();
-  // }
-
-  // const getTableResults = (result: any) => {
-  //   if (result.length > 0) {
-  //     return <DataTable data={result} />;
-  //   } else {
-  //     return <Spinner animation="border" />;
-  //   }
-  // };
 
   return (
     <>
