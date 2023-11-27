@@ -120,7 +120,6 @@ const Home = () => {
           }
         });
       }
-      
       return "";
   };
 
@@ -593,9 +592,7 @@ const Home = () => {
             return returnProperString(key, value);
           })
           .join(", ");
-        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-        // executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow};`;
-        
+        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;        
         
         let update_err = await OracleServerRequest(executeQuery);
         if(errorHandle(update_err) !== ""){
@@ -633,6 +630,15 @@ const Home = () => {
     }
     console.log(executeQuery);
     setResult(await OracleServerRequest(executeQuery));
+    // let result_err = await OracleServerRequest(executeQuery);
+    // if(errorHandle(result_err) !== ""){
+    //   alert("SUCCESS !");
+    //   setResult(result_err);
+    // }
+    // else{
+    //   alert("FAIL : error exists");
+    //   setResult(result_err);
+    // }
   };
 
   // function handleDebugSubmit(event: any) {
