@@ -75,10 +75,7 @@ DELETE CASCADE
 
 CREATE TABLE Inventory (
     InventoryID INT PRIMARY KEY,
-    PlayerCharacterID INT UNIQUE NOT NULL,
     InventorySize INT,
-    FOREIGN KEY (PlayerCharacterID) REFERENCES Player(CharacterID) ON 
-DELETE CASCADE
 );
 
 CREATE TABLE NonPlayableCharacter (
@@ -202,11 +199,11 @@ INSERT INTO NonPlayableCharacter (CharacterID, Personality) VALUES (2003, 'Myste
 INSERT INTO NonPlayableCharacter (CharacterID, Personality) VALUES (2004, 'Talkative');
 INSERT INTO NonPlayableCharacter (CharacterID, Personality) VALUES (2005, 'Silent');
 
-INSERT INTO Inventory (InventoryID, PlayerCharacterID, InventorySize) VALUES (1001, 1382, 20);
-INSERT INTO Inventory (InventoryID, PlayerCharacterID, InventorySize) VALUES (1002, 3312, 15);
-INSERT INTO Inventory (InventoryID, PlayerCharacterID, InventorySize) VALUES (1003, 5869, 18);
-INSERT INTO Inventory (InventoryID, PlayerCharacterID, InventorySize) VALUES (1004, 1129, 25);
-INSERT INTO Inventory (InventoryID, PlayerCharacterID, InventorySize) VALUES (1005, 1269, 10);
+INSERT INTO Inventory (InventoryID, InventorySize) VALUES (1001, 20);
+INSERT INTO Inventory (InventoryID, InventorySize) VALUES (1002, 15);
+INSERT INTO Inventory (InventoryID, InventorySize) VALUES (1003, 18);
+INSERT INTO Inventory (InventoryID, InventorySize) VALUES (1004, 25);
+INSERT INTO Inventory (InventoryID, InventorySize) VALUES (1005, 10);
 
 INSERT INTO Item (ItemID, ItemName) VALUES (1001, 'Sword of Light');
 INSERT INTO Item (ItemID, ItemName) VALUES (1002, 'Dark Shield');
