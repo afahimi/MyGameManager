@@ -484,6 +484,97 @@ const Home = () => {
         </div>
       </div>
     ),
+    NESTED_AGGREGATION: (
+      <div className="">
+        <div className="flex justify-center items-center gap-2">
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupByOperation}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {AGGREGATION_OPS.map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupByOperation(elem)}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          (
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupBy[0]}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {Array.from(getTableAttributes()).map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          )
+          
+        </div>
+        
+        <div className="flex justify-center items-center gap-2">
+        Group By
+          <Form>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                {groupBy[1]}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {Array.from(getTableAttributes()).map((elem) => {
+                  return (
+                    <>
+                      <Dropdown.Item
+                        key={`2-${elem}`}
+                        onClick={() => setGroupBy((old: any) => [old[0], elem])}
+                      >
+                        {elem}
+                      </Dropdown.Item>
+                    </>
+                  );
+                })}
+              </Dropdown.Menu>
+            </Dropdown>
+          </Form>
+        </div>
+        <div className="inline-flex space-x-4">
+          HAVING
+          <WhereHaving
+            isWhere={false}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
+            tableAttrributes={getTableAttributes()}
+            setAttrs={setAggrKeys}
+          />
+
+        </div>
+      </div>
+    ),
     DIVISION: ( 
       <>
       <div className="inline-flex space-x-4">
@@ -655,6 +746,9 @@ const Home = () => {
         }
         console.log(executeQuery);
         break;
+      case "NESTED_AGGREGATION":
+        
+
     }
     console.log(executeQuery);
     setResult(await OracleServerRequest(executeQuery));
