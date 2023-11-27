@@ -47,3 +47,7 @@
 .project_form > * {
   margin: 10px;
 }
+
+.table-item {
+  cursor: pointer;
+}
