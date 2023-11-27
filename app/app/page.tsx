@@ -16,9 +16,11 @@ import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
 
 import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
-import { table } from "console";
+import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
+import WhereHaving from "./components/where_having.tsx";
+import { exec } from "child_process";
 
 const roboto = Roboto({
   weight: "400",
@@ -28,7 +30,7 @@ const roboto = Roboto({
 type RecordType = Record<string, string>;
 
 const Home = () => {
-  const [query, setQuery] = useState<Record<string, string>>({});
+  const [query, setQuery] = useState<RecordType>({});
   const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
 
@@ -39,22 +41,22 @@ const Home = () => {
   const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
   const [distinct, setDistinct] = useState<boolean>(false);
-
+  
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
-
+  
   const [groupBy, setGroupBy] = useState<any[]>([]);
   const [groupByOperation, setGroupByOperation] = useState<string>("");
-
+  
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
-
-  const [divisorColumn, setDivisorColumn] = useState<string>("");
-
+  
+  const [operator, setOperator] = useState<string>("");
+  const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
   interface OracleError {
     ERROR: string;
   }
-
+  /* Helper functions for error handling or input sanitizing */
   const operations = [
     "SELECT",
     "PROJECT",
@@ -66,38 +68,86 @@ const Home = () => {
     "UPDATE",
     "RAW QUERY",
   ];
-
+  
   const sanitizeInputs = (str: string) => {
     const patterns = [
-      /--/,
-      /;/,
-      /'/,
-      /"/,
-      /\bDROP\b/i,
+      /--/,         
+      /;/,          
+      /'/,          
+      /"/,          
+      /\bDROP\b/i,  
       /\bSELECT\b/i,
       /\bINSERT\b/i,
       /\bWHERE\b/i,
       /\bFROM\b/i,
       /\bDELETE\b/i,
       /\bUPDATE\b/i,
-      /\bUNION\b/i,
-      /\bALTER\b/i,
-      /\bEXEC\b/i,
+      /\bUNION\b/i, 
+      /\bALTER\b/i, 
+      /\bEXEC\b/i,  
       /\bEXECUTE\b/i,
-      /\\/,
-      /\bNULL\b/i,
-      /%/i,
-      /_/i,
+      /\\/,         
+      /\bNULL\b/i,  
+      /%/i,         
+      /_/i          
     ];
-
+    
+    
     for (const pattern of patterns) {
       if (pattern.test(str)) {
-        return "";
+        return ''; 
       }
     }
-
+    
     return str;
   };
+  
+  const convertStringToIntIfPossible = (str: string) => {
+    var num = parseInt(str, 10);
+    return isNaN(num) ? str : num;
+  };
+
+  const returnProperString = (key: string, value: string) => {
+    const converted = convertStringToIntIfPossible(value);
+    return typeof converted === "number"
+      ? `${key} = ${converted}`
+      : `${key} = '${converted}'`;
+  };
+  
+  const errorHandle = (err : OracleError[]) => {
+
+      if(err && err.length > 0){
+        for (const element of err) {
+          if(element.ERROR){
+            console.log(element.ERROR)
+            return element.ERROR;
+          }
+        };
+      }
+ 
+      return "";
+  };
+
+  const requestResult = async (executeQuery : string) => {
+    const result = await OracleServerRequest(executeQuery);
+
+    if(errorHandle(result).length > 0){
+      alert("FAILURE : error exists");
+      setResult(result);
+    }
+    else {
+      if(["INSERT", "DELETE", "UPDATE"].includes(operation)){
+        const updatedResult = await OracleServerRequest(`SELECT * FROM ${currTable}`);
+        setResult(updatedResult);
+      }
+      else{
+        setResult(result);
+      }
+      alert("SUCCESS !");
+    }
+  }
+
+  /* ************************************************************ */
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
     if (checked) {
@@ -106,7 +156,7 @@ const Home = () => {
     } else {
       console.log("unchecked");
       setProjectSelections((prevSelections) =>
-        prevSelections.filter((item) => item !== key)
+      prevSelections.filter((item) => item !== key)
       );
     }
     console.log(projectSelections);
@@ -142,18 +192,6 @@ const Home = () => {
     });
   };
 
-  const convertStringToIntIfPossible = (str: string) => {
-    var num = parseInt(str, 10);
-    return isNaN(num) ? str : num;
-  };
-
-  const returnProperString = (key: string, value: string) => {
-    const converted = convertStringToIntIfPossible(value);
-    return typeof converted === "number"
-      ? `${key} = ${converted}`
-      : `${key} = '${converted}'`;
-  };
-
   const getTableAttributes = () => {
     if (result.length == 0) {
       return [];
@@ -163,7 +201,6 @@ const Home = () => {
   };
 
   const handleInputChange = (fieldName: string, value: string) => {
-    console.log(defaultQuery);
     setQuery((prevQuery) => ({
       ...prevQuery,
       [fieldName]: value,
@@ -267,18 +304,6 @@ const Home = () => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
 
-  const errorHandle = (err: OracleError[]) => {
-    if (err && err.length > 0) {
-      err.forEach((element: OracleError) => {
-        if (element.ERROR) {
-          console.log(element.ERROR);
-          return element.ERROR;
-        }
-      });
-    }
-
-    return "";
-  };
 
   const [field, setField] = useState<any[]>([]);
 
@@ -305,17 +330,14 @@ const Home = () => {
           </h1>
         </div>
         <div className="inline-flex space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Where
-          </h1>
-          <Form>
-            <Form.Control
-              type="text"
-              placeholder="Enter condition"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form>
+          <WhereHaving
+            isWhere={false}
+            op={operator}
+            opSetVal={setOperator} 
+            opStates={operatorStates}
+            setOpStates={setOperatorStates}
+            tableAttrributes={getTableAttributes()}
+          />
         </div>
       </>
     ),
@@ -358,14 +380,8 @@ const Home = () => {
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Where
           </h1>
-          <Form>
-            <Form.Control
-              type="text"
-              placeholder="Enter condition"
-              value={defaultQuery}
-              onChange={(e) => setDefaultQuery(e.target.value)}
-            />
-          </Form>
+  
+
         </div>
       </>
     ),
@@ -415,56 +431,61 @@ const Home = () => {
     ),
 
     AGGREGATION: (
-      <div className="flex justify-center items-center gap-2">
-        Group
-        <div>
-          <Form>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {groupByOperation}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {AGGREGATION_OPS.map((elem) => {
-                  return (
-                    <>
-                      <Dropdown.Item
-                        key={elem}
-                        onClick={() => setGroupByOperation(elem)}
-                      >
-                        {elem}
-                      </Dropdown.Item>
-                    </>
-                  );
-                })}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Form>
+      <div className="">
+        <div className="flex justify-center items-center gap-2">
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupByOperation}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {AGGREGATION_OPS.map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupByOperation(elem)}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          (
+          <div>
+            <Form>
+              <Dropdown>
+                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+                  {groupBy[0]}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {Array.from(getTableAttributes()).map((elem) => {
+                    return (
+                      <>
+                        <Dropdown.Item
+                          key={elem}
+                          onClick={() => setGroupBy((old: any) => [elem, old[1]])}
+                        >
+                          {elem}
+                        </Dropdown.Item>
+                      </>
+                    );
+                  })}
+                </Dropdown.Menu>
+              </Dropdown>
+            </Form>
+          </div>
+          )
+          
         </div>
-        <div>
-          <Form>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {groupBy[0]}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {Array.from(getTableAttributes()).map((elem) => {
-                  return (
-                    <>
-                      <Dropdown.Item
-                        key={elem}
-                        onClick={() => setGroupBy((old: any) => [elem, old[1]])}
-                      >
-                        {elem}
-                      </Dropdown.Item>
-                    </>
-                  );
-                })}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Form>
-        </div>
-        By
-        <div>
+        
+        <div className="flex justify-center items-center gap-2">
+        Group By
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -487,6 +508,15 @@ const Home = () => {
             </Dropdown>
           </Form>
         </div>
+        <WhereHaving
+          isWhere={true}
+          op={operator}
+          opSetVal={setOperator} 
+          opStates={operatorStates}
+          setOpStates={setOperatorStates}
+          tableAttrributes={getTableAttributes()}
+        />
+        
       </div>
     ),
     DIVISION: (
@@ -552,6 +582,10 @@ const Home = () => {
         executeQuery = `SELECT ${projectSelections.join(
           ","
         )} FROM ${currTable} ${where_clause}`;
+        console.log(operatorStates)
+        if (operatorStates[0] !== "") {
+          executeQuery += `WHERE ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        }
         break;
 
       case "INSERT":
@@ -563,12 +597,6 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
-
-        let insert_err = await OracleServerRequest(executeQuery);
-        if (errorHandle(insert_err) !== "") {
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
-
         break;
 
       case "DELETE":
@@ -579,8 +607,6 @@ const Home = () => {
           .join(" AND ");
 
         executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
         break;
 
       case "UPDATE":
@@ -598,12 +624,7 @@ const Home = () => {
             return returnProperString(key, value);
           })
           .join(", ");
-        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-
-        let update_err = await OracleServerRequest(executeQuery);
-        if (update_err !== "") {
-          executeQuery = `SELECT * FROM ${currTable}`;
-        }
+        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;        
         setUpdateValues({});
         break;
 
@@ -625,7 +646,6 @@ const Home = () => {
         executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
-        console.log(executeQuery);
         break;
 
       case "RAW QUERY":
@@ -633,8 +653,15 @@ const Home = () => {
         break;
 
       case "AGGREGATION":
-        executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
-        console.log(executeQuery);
+        if (groupBy[1] == undefined) {
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable}`;
+        } else {
+          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]}`;
+        } 
+
+        if (operatorStates[0] !== "") {
+          executeQuery += `HAVING ${operatorStates[0]} ${operator} ${operatorStates[1]}`;
+        }
         break;
 
       case "DIVISION":
@@ -656,23 +683,20 @@ const Home = () => {
         console.log(executeQuery);
         break;
     }
-    console.log(executeQuery);
-    const result = await OracleServerRequest(executeQuery);
-    console.log(result);
-    setResult(result);
-  };
+    requestResult(executeQuery);
 
-  function handleDebugSubmit(event: any) {
-    OracleServerRequest(event.message);
-    event?.preventDefault();
-  }
 
-  const getTableResults = (result: any) => {
-    if (result.length > 0) {
-      return <DataTable data={result} />;
-    } else {
-      return <Spinner animation="border" />;
-    }
+    // console.log(executeQuery);
+    // setResult(await OracleServerRequest(executeQuery));
+    // let result_err = await OracleServerRequest(executeQuery);
+    // console.log(result_err);
+    // if(errorHandle(result_err).length > 0){
+    //   alert("SUCCESS");
+    // }
+    // else{
+    //   alert("FAILURE : error exists")
+    // }
+    // setResult(result_err);
   };
 
   return (
@@ -725,7 +749,9 @@ const Home = () => {
               </ButtonGroup>
             </div>
             <div className={styles.form}>
-              {operationUI[operation] ? operationUI[operation] : null}
+              {operationUI[operation] 
+                ? operationUI[operation] 
+                : null}
             </div>
             <div className={styles.reset_btn}>
               <Button
@@ -746,20 +772,19 @@ const Home = () => {
                 : "Select a table to view"}
             </div>
             <div className="text-cyan-800">
-              {operation ? `Current Operation: ${operation}` : null}
+              {operation 
+                ?`Current Operation: ${operation}` 
+                : null}
             </div>
-            <div className={styles.table}>{getTableResults(result)}</div>
             <div className={styles.table}>
-              {(() => {
-                if (
-                  joinTableResult.length > 0 &&
-                  (operation === "JOIN" || operation === "DIVISION")
-                ) {
-                  return <DataTable data={joinTableResult} />;
-                } else {
-                  return <></>;
-                }
-              })()}
+              {result.length > 0 
+                ? <DataTable data = {result}/> 
+                : <Spinner animation = "border"/>}
+            </div>
+            <div className={styles.table}>
+                {operation === 'JOIN' && joinTableResult.length > 0 
+                  ? <DataTable data={joinTableResult} /> 
+                  : null}
             </div>
           </div>
         </div>

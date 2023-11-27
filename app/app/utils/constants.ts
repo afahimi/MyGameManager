@@ -6,4 +6,13 @@ let AGGREGATION_OPS = [
     "COUNT"
 ]
 
-export {AGGREGATION_OPS}
+let OPERATORS = [
+    ">",
+    "<",
+    ">=",
+    "<=",
+    "=",
+    "<>"
+]
+
+export {AGGREGATION_OPS, OPERATORS}
