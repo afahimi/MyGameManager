@@ -29,7 +29,7 @@ const roboto = Roboto({
 type RecordType = Record<string, string>;
 
 const Home = () => {
-  const [query, setQuery] = useState<Record<string, string>>({});
+  const [query, setQuery] = useState<RecordType>({});
   const [defaultQuery, setDefaultQuery] = useState("");
   const [result, setResult] = useState([]);
 
@@ -40,22 +40,22 @@ const Home = () => {
   const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
   const [distinct, setDistinct] = useState<boolean>(false);
-
+  
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
-
+  
   const [groupBy, setGroupBy] = useState<any[]>([]);
   const [groupByOperation, setGroupByOperation] = useState<string>("");
-
+  
   const [joinTableResult, setJoinTableResult] = useState<any[]>([]);
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
-
+  
   const [operator, setOperator] = useState<string>("");
   const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
   interface OracleError {
     ERROR : string;
   }
-
+  /* Helper functions for error handling or input sanitizing */
   const operations = [
     "SELECT",
     "PROJECT",
@@ -67,39 +67,67 @@ const Home = () => {
     "UPDATE",
     "RAW QUERY",
   ];
-
+  
   const sanitizeInputs = (str: string) => {
     const patterns = [
-        /--/,         
-        /;/,          
-        /'/,          
-        /"/,          
-        /\bDROP\b/i,  
-        /\bSELECT\b/i,
-        /\bINSERT\b/i,
-        /\bWHERE\b/i,
-        /\bFROM\b/i,
-        /\bDELETE\b/i,
-        /\bUPDATE\b/i,
-        /\bUNION\b/i, 
-        /\bALTER\b/i, 
-        /\bEXEC\b/i,  
-        /\bEXECUTE\b/i,
-        /\\/,         
-        /\bNULL\b/i,  
-        /%/i,         
-        /_/i          
+      /--/,         
+      /;/,          
+      /'/,          
+      /"/,          
+      /\bDROP\b/i,  
+      /\bSELECT\b/i,
+      /\bINSERT\b/i,
+      /\bWHERE\b/i,
+      /\bFROM\b/i,
+      /\bDELETE\b/i,
+      /\bUPDATE\b/i,
+      /\bUNION\b/i, 
+      /\bALTER\b/i, 
+      /\bEXEC\b/i,  
+      /\bEXECUTE\b/i,
+      /\\/,         
+      /\bNULL\b/i,  
+      /%/i,         
+      /_/i          
     ];
-
-
+    
+    
     for (const pattern of patterns) {
-        if (pattern.test(str)) {
-            return ''; 
-        }
+      if (pattern.test(str)) {
+        return ''; 
+      }
     }
-
+    
     return str;
   };
+  
+  const convertStringToIntIfPossible = (str: string) => {
+    var num = parseInt(str, 10);
+    return isNaN(num) ? str : num;
+  };
+
+  const returnProperString = (key: string, value: string) => {
+    const converted = convertStringToIntIfPossible(value);
+    return typeof converted === "number"
+      ? `${key} = ${converted}`
+      : `${key} = '${converted}'`;
+  };
+  
+  const errorHandle = (err : OracleError[]) => {
+
+      if(err && err.length > 0){
+        err.forEach( (element : OracleError) => {
+          if(element.ERROR){
+            console.log(element.ERROR)
+            return element.ERROR;
+          }
+        });
+      }
+      
+      return "";
+  };
+
+  /* ************************************************************ */
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
     if (checked) {
@@ -108,7 +136,7 @@ const Home = () => {
     } else {
       console.log("unchecked");
       setProjectSelections((prevSelections) =>
-        prevSelections.filter((item) => item !== key)
+      prevSelections.filter((item) => item !== key)
       );
     }
     console.log(projectSelections);
@@ -144,18 +172,6 @@ const Home = () => {
     });
   };
 
-  const convertStringToIntIfPossible = (str: string) => {
-    var num = parseInt(str, 10);
-    return isNaN(num) ? str : num;
-  };
-
-  const returnProperString = (key: string, value: string) => {
-    const converted = convertStringToIntIfPossible(value);
-    return typeof converted === "number"
-      ? `${key} = ${converted}`
-      : `${key} = '${converted}'`;
-  };
-
   const getTableAttributes = () => {
     if (result.length == 0) {
       return [];
@@ -165,7 +181,6 @@ const Home = () => {
   };
 
   const handleInputChange = (fieldName: string, value: string) => {
-    console.log(defaultQuery);
     setQuery((prevQuery) => ({
       ...prevQuery,
       [fieldName]: value,
@@ -248,19 +263,6 @@ const Home = () => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
 
-  const errorHandle = (err : OracleError[]) => {
-
-      if(err && err.length > 0){
-        err.forEach( (element : OracleError) => {
-          if(element.ERROR){
-            console.log(element.ERROR)
-            return element.ERROR;
-          }
-        });
-      }
-      
-      return "";
-  };
 
   const [field, setField] = useState<any[]>([]);
 
@@ -568,7 +570,7 @@ const Home = () => {
 
         let insert_err = await OracleServerRequest(executeQuery);
         if (errorHandle(insert_err) !== ""){
-            executeQuery = `SELECT * FROM ${currTable}`;
+          executeQuery = `SELECT * FROM ${currTable}`;
         }
 
         break;
@@ -581,8 +583,11 @@ const Home = () => {
           .join(" AND ");
 
         executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
+
+        let delete_err = await OracleServerRequest(executeQuery);
+        if(errorHandle(delete_err) !== ""){
+          executeQuery = `SELECT * FROM ${currTable}`;
+        }
         break;
 
       case "UPDATE":
@@ -601,11 +606,14 @@ const Home = () => {
           })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
+        // executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow};`;
+        
         
         let update_err = await OracleServerRequest(executeQuery);
-        if(update_err !== ""){
+        if(errorHandle(update_err) !== ""){
           executeQuery = `SELECT * FROM ${currTable}`;
         }
+
         setUpdateValues({});
         break;
 
@@ -647,18 +655,18 @@ const Home = () => {
     setResult(await OracleServerRequest(executeQuery));
   };
 
-  function handleDebugSubmit(event: any) {
-    OracleServerRequest(event.message);
-    event?.preventDefault();
-  }
+  // function handleDebugSubmit(event: any) {
+  //   OracleServerRequest(event.message);
+  //   event?.preventDefault();
+  // }
 
-  const getTableResults = (result: any) => {
-    if (result.length > 0) {
-      return <DataTable data={result} />;
-    } else {
-      return <Spinner animation="border" />;
-    }
-  };
+  // const getTableResults = (result: any) => {
+  //   if (result.length > 0) {
+  //     return <DataTable data={result} />;
+  //   } else {
+  //     return <Spinner animation="border" />;
+  //   }
+  // };
 
   return (
     <>
@@ -710,7 +718,9 @@ const Home = () => {
               </ButtonGroup>
             </div>
             <div className={styles.form}>
-              {operationUI[operation] ? operationUI[operation] : null}
+              {operationUI[operation] 
+                ? operationUI[operation] 
+                : null}
             </div>
             <div className={styles.reset_btn}>
               <Button
@@ -731,17 +741,19 @@ const Home = () => {
                 : "Select a table to view"}
             </div>
             <div className="text-cyan-800">
-              {operation ? `Current Operation: ${operation}` : null}
+              {operation 
+                ?`Current Operation: ${operation}` 
+                : null}
             </div>
-            <div className={styles.table}>{getTableResults(result)}</div>
             <div className={styles.table}>
-              {(() => {
-                if (joinTableResult.length > 0 && operation === "JOIN") {
-                  return <DataTable data={joinTableResult} />;
-                } else {
-                  return <></>;
-                }
-              })()}
+              {result.length > 0 
+                ? <DataTable data = {result}/> 
+                : <Spinner animation = "border"/>}
+            </div>
+            <div className={styles.table}>
+                {operation === 'JOIN' && joinTableResult.length > 0 
+                  ? <DataTable data={joinTableResult} /> 
+                  : null}
             </div>
           </div>
         </div>
