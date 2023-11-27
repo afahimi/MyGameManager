@@ -39,6 +39,7 @@ const Home = () => {
   const [currTable, setCurrTable] = useState("");
   const [currTableKeys, setCurrTableKeys] = useState<Array<string>>([]);
   const [operation, setOperation] = useState<string>("");
+  const [distinct, setDistinct] = useState<boolean>(false);
 
   const [projectSelections, setProjectSelections] = useState<string[]>([]);
   const [joinSelection, setJoinSelection] = useState<string>("");
@@ -51,6 +52,9 @@ const Home = () => {
 
   const [operator, setOperator] = useState<string>("");
   const [operatorStates, setOperatorStates] = useState<any[]>(["", "",""]);
+  interface OracleError {
+    ERROR : string;
+  }
 
   const operations = [
     "SELECT",
@@ -180,6 +184,8 @@ const Home = () => {
     setCurrTable(table_name);
     setDefaultQuery("");
     setQuery({});
+    setGroupByOperation("");
+    setGroupBy([]);
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -242,6 +248,20 @@ const Home = () => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
 
+  const errorHandle = (err : OracleError[]) => {
+
+      if(err && err.length > 0){
+        err.forEach( (element : OracleError) => {
+          if(element.ERROR){
+            console.log(element.ERROR)
+            return element.ERROR;
+          }
+        });
+      }
+      
+      return "";
+  };
+
   const [field, setField] = useState<any[]>([]);
 
   interface OperationUI {
@@ -285,6 +305,14 @@ const Home = () => {
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             Select
           </h1>
+          <Form.Check
+            type = "checkbox"
+            label = "Distinct"
+            checked = {distinct}
+            onChange = {(e) => 
+              setDistinct(e.target.checked)
+            }
+          />
           <Form>
             <div className={styles.project_form}>
               {generateProjectElements(result)}
@@ -507,12 +535,14 @@ const Home = () => {
     ),
   };
 
+
   /* Given the values generate a query to execute and toss it to postRequest */
   const handleExecuteQuery = async () => {
     setResult([]);
     let executeQuery = "";
     let where_clause = "";
     switch (operation) {
+      
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
@@ -535,8 +565,12 @@ const Home = () => {
           })
           .join(",");
         executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
+
+        let insert_err = await OracleServerRequest(executeQuery);
+        if (errorHandle(insert_err) !== ""){
+            executeQuery = `SELECT * FROM ${currTable}`;
+        }
+
         break;
 
       case "DELETE":
@@ -567,8 +601,11 @@ const Home = () => {
           })
           .join(", ");
         executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
-        await OracleServerRequest(executeQuery);
-        executeQuery = `SELECT * FROM ${currTable}`;
+        
+        let update_err = await OracleServerRequest(executeQuery);
+        if(update_err !== ""){
+          executeQuery = `SELECT * FROM ${currTable}`;
+        }
         setUpdateValues({});
         break;
 
@@ -582,7 +619,8 @@ const Home = () => {
       case "JOIN":
         setProjectSelections([]);
         where_clause = defaultQuery ? (sanitizeInputs(defaultQuery) !== "" ? `WHERE ${sanitizeInputs(defaultQuery)}` : "") : "";
-        executeQuery = `SELECT ${projectSelections.join(
+        let distinctOn = distinct ? "DISTINCT" : "";
+        executeQuery = `SELECT ${distinctOn} ${projectSelections.join(
           ", "
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
         console.log(executeQuery);
@@ -643,6 +681,7 @@ const Home = () => {
                     className="mt-2"
                     onClick={() => {
                       changeVisibleTable(tableName.TABLE_NAME);
+                      setDistinct(false)
                     }}
                   >
                     {tableName.TABLE_NAME}

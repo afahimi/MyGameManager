@@ -27,11 +27,13 @@ export async function OracleServerRequest(query: string) {
       body: JSON.stringify({ query: query }),
     };
     console.log("sending post request");
-
     let result = await fetch(
       "https://www.students.cs.ubc.ca/~afahimi/index.php",
       requestOptions
-    )
+    );
     
-    return result.json()
+    
+
+    return result.json();
 }
+
