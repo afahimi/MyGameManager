@@ -166,9 +166,9 @@ const Home = () => {
     setAlert({ isVisible: true, msg, op_result });
 
     setTimeout(() => {
-      setAlert({ isVisible: false, msg: "", op_result: "success" });
-    }, 2000);
-  };
+        setAlert({ isVisible: false, msg: '', op_result: 'success' });
+    }, 3500);
+};
 
   /* ************************************************************ */
 
