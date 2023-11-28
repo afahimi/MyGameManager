@@ -212,6 +212,11 @@ INSERT INTO Item (ItemID, ItemName) VALUES (1004, 'Bow of Eternity');
 INSERT INTO Item (ItemID, ItemName) VALUES (1005, 'Ring of Strength');
 
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1001, 1);
+INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1002, 1);
+INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1004, 1);
+INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1003, 1);
+INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1007, 1);
+INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1005, 1);
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1002, 1002, 1);
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1003, 1003, 5);
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1004, 1004, 2);

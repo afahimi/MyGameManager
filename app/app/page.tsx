@@ -22,6 +22,7 @@ import { useAppDispatch, useAppSelector } from "./hooks";
 import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { divisionQueries } from "./utils/division_queries.ts";
+import { nestedAggregation } from "./utils/nested_aggregations.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
 import { exec } from "child_process";
@@ -71,40 +72,15 @@ const Home = () => {
     ERROR: string;
   }
   /* Helper functions for error handling or input sanitizing */
-  const custom_nested_aggregation = [
-    `SELECT P.CharacterID 
-    FROM Player P 
-    WHERE (SELECT COUNT(DISTINCT D.SkillName) 
-           FROM Develops D 
-           WHERE D.CharacterID = P.CharacterID) 
-           = (SELECT COUNT(*) FROM SKILL)`, // Players with All Skills
-    `SELECT P.CharacterID 
-     FROM Player P, CharacterInfo C 
-     WHERE P.CharacterID = C.CharacterID AND C.Health > (SELECT AVG(Health) FROM CharacterInfo)`, // All Players with Health Greater than Average Player Health
-    `SELECT P.CharacterID 
-     FROM Player P, CharacterInfo C 
-     WHERE CI.OverallLevel > (SELECT AVG(OverallLevel) 
-                              FROM CharacterInfo)`, // All Players with Level Greater than Average Player Level
-    `SELECT P.CharacterID 
-     FROM Player P, CharacterInfo C 
-     WHERE CI.OverallLevel < (SELECT AVG(OverallLevel) FROM CharacterInfo)`, // All Players with Level Less than Average Player Level
-    `SELECT L.LocationName 
-     FROM Locations L 
-     WHERE NOT EXISTS (SELECT * 
-                       FROM CoordinateLocations CL, CharacterInfo C 
-                       WHERE L.LocationName = CL.LocationName AND CL.Coordinates = CI.Coordinates AND C.CharacterID IN (SELECT CH`
-  ]
-
   const operations = [
     "SELECT",
     "PROJECT",
     "JOIN",
     "AGGREGATION",
-    "DIVISION",
+    "SUMMARY",
     "INSERT",
     "DELETE",
-    "UPDATE",
-    "RAW QUERY",
+    "UPDATE"
   ];
 
   const sanitizeInputs = (str: string) => {
@@ -329,9 +305,11 @@ const Home = () => {
   };
 
   const generateDivisionMenuElements = () => {
-    const divisonQueries = ["Select all players who have all items"];
+    let divisonQueries : any[] = ["Select all players who have all items"];
+    let nestedAggQueries = Object.keys(nestedAggregation);
+    let combinedList = nestedAggQueries.concat(divisonQueries);
 
-    return divisonQueries.map((query: string, count) => {
+    return combinedList.map((query: string, count) => {
       return (
         <Dropdown.Item
           key={count}
@@ -360,7 +338,7 @@ const Home = () => {
       <>
         <div>
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Select
+            Find
           </h1>
           <Form>
             <div className={styles.project_form}>
@@ -658,7 +636,7 @@ const Home = () => {
         </div>
       </div>
     ),
-    DIVISION: (
+    SUMMARY: (
       <>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
@@ -668,7 +646,7 @@ const Home = () => {
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
               {divisionQuery ? divisionQuery : "Select Table"}
             </Dropdown.Toggle>
-
+            
             <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
           </Dropdown>
         </div>
@@ -794,8 +772,13 @@ const Home = () => {
         console.log(executeQuery);
         break;
 
-      case "DIVISION":
-        executeQuery = divisionQuery ? divisionQueries[divisionQuery] : "";
+      case "SUMMARY":
+        if (divisionQuery in divisionQueries) {
+          executeQuery = divisionQuery ? divisionQueries[divisionQuery] : "";
+        } else {
+          executeQuery = nestedAggregation[divisionQuery]
+        }
+        
         break;
     }
 
