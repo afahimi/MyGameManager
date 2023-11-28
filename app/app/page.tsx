@@ -21,6 +21,7 @@ import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
+import { divisionQueries } from "./utils/division_queries.ts";
 import { AGGREGATION_OPS } from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
 import { exec } from "child_process";
@@ -55,12 +56,16 @@ const Home = () => {
   const [updateValues, setUpdateValues] = useState<Record<string, string>>({});
 
   const [divisorColumn, setDivisorColumn] = useState<string>("");
+  const [divisionQuery, setDivisionQuery] = useState<string>("");
 
   const [whereHavingStr, setWhereHavingStr] = useState("");
   const [aggrKeys, setAggrKeys] = useState<string[]>([]);
 
-  const [alert, setAlert] = useState<AlertProperty>({ isVisible: false, msg: '', op_result: 'success'});
-  
+  const [alert, setAlert] = useState<AlertProperty>({
+    isVisible: false,
+    msg: "",
+    op_result: "success",
+  });
 
   interface OracleError {
     ERROR: string;
@@ -111,8 +116,7 @@ const Home = () => {
   };
 
   const convertStringToIntIfPossible = (str: string) => {
-    
-    if(/^\d+$/.test(str)) {
+    if (/^\d+$/.test(str)) {
       return parseInt(str, 10);
     }
 
@@ -143,7 +147,7 @@ const Home = () => {
     const result = await OracleServerRequest(executeQuery);
     console.log(result);
     if (errorHandle(result).length > 0) {
-      showAlert("FAILURE: error exists", 'fail');
+      showAlert("FAILURE: error exists", "fail");
       setResult(result);
     } else {
       if (["INSERT", "DELETE", "UPDATE"].includes(operation)) {
@@ -154,17 +158,17 @@ const Home = () => {
       } else {
         setResult(result);
       }
-      showAlert("SUCCESS!", 'success')
+      showAlert("SUCCESS!", "success");
     }
-  }
+  };
 
-  const showAlert = (msg: string, op_result: 'success' | 'fail') => {
+  const showAlert = (msg: string, op_result: "success" | "fail") => {
     setAlert({ isVisible: true, msg, op_result });
 
     setTimeout(() => {
-        setAlert({ isVisible: false, msg: '', op_result: 'success' });
+      setAlert({ isVisible: false, msg: "", op_result: "success" });
     }, 2000);
-};
+  };
 
   /* ************************************************************ */
 
@@ -301,21 +305,17 @@ const Home = () => {
   };
 
   const generateDivisionMenuElements = () => {
-    if (joinTableResult.length === 0) {
-      return null;
-    }
-    const uniqueKeys = new Set(Object.keys(joinTableResult[0]));
-    const uniqueKeysArray = Array.from(uniqueKeys);
+    const divisonQueries = ["Select all players who have all items"];
 
-    return uniqueKeysArray.map((key, index) => {
+    return divisonQueries.map((query: string, count) => {
       return (
         <Dropdown.Item
-          key={`${key}-${index}`}
+          key={count}
           onClick={() => {
-            setDivisorColumn(key);
+            setDivisionQuery(query);
           }}
         >
-          {key}
+          {query}
         </Dropdown.Item>
       );
     });
@@ -404,7 +404,6 @@ const Home = () => {
             tableAttrributes={getTableAttributes()}
             setAttrs={setAggrKeys}
           />
-
         </div>
       </>
     ),
@@ -639,44 +638,15 @@ const Home = () => {
       <>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Divide {currTable} by
+            Select a Query to Answer:
           </h1>
           <Dropdown>
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-              {joinSelection ? joinSelection : "Select Table"}
+              {divisionQuery ? divisionQuery : "Select Table"}
             </Dropdown.Toggle>
 
-            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+            <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
           </Dropdown>
-          {joinSelection ? (
-            <>
-              <h1
-                className={`text-xl font text-slate-950 text-middle font-bold`}
-              >
-                column:
-              </h1>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                  {divisorColumn ? divisorColumn : "Select Divisor Column"}
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
-              </Dropdown>
-              <h1
-                className={`text-xl font text-slate-950 text-middle font-bold`}
-              >
-                as:
-              </h1>
-              <Form>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter column"
-                  value={defaultQuery}
-                  onChange={(e) => setDefaultQuery(e.target.value)}
-                />
-              </Form>
-            </>
-          ) : null}
         </div>
       </>
     ),
@@ -778,7 +748,7 @@ const Home = () => {
         if (whereHavingStr !== "") {
           executeQuery += `WHERE ${whereHavingStr}`;
         }
-        
+
         break;
 
       case "RAW QUERY":
@@ -801,78 +771,15 @@ const Home = () => {
         break;
 
       case "DIVISION":
-        executeQuery = 
-        `
-        CREATE OR REPLACE VIEW DIVIDEND AS
-        SELECT ITEMID, INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM PLAYER
-        NATURAL JOIN CHARACTERINFO
-        NATURAL JOIN CONTAINS;
-
-        CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
-        SELECT DISTINCT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY
-        FROM DIVIDEND;
-
-        CREATE OR REPLACE VIEW DIVISOR AS
-        SELECT DISTINCT ITEMID FROM ITEM;
-
-        CREATE OR REPLACE VIEW INTERMEDIATE AS
-        SELECT * FROM DIVISOR, TEMP_DIVIDEND
-        MINUS
-        SELECT * FROM DIVIDEND;
-
-        SELECT * FROM TEMP_DIVIDEND
-        MINUS
-        SELECT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM INTERMEDIATE;
-          `;
-
-        console.log(executeQuery);
+        executeQuery = divisionQuery ? divisionQueries[divisionQuery] : "";
         break;
     }
 
-    `
-    CREATE OR REPLACE VIEW DIVIDEND AS
-SELECT ITEMID, INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM PLAYER
-NATURAL JOIN CHARACTERINFO
-NATURAL JOIN CONTAINS;
-
-CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
-SELECT DISTINCT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY
-FROM DIVIDEND;
-
-CREATE OR REPLACE VIEW DIVISOR AS
-SELECT DISTINCT ITEMID FROM ITEM;
-
-CREATE OR REPLACE VIEW INTERMEDIATE AS
-SELECT * FROM DIVISOR, TEMP_DIVIDEND
-MINUS
-SELECT * FROM DIVIDEND;
-
-SELECT * FROM TEMP_DIVIDEND
-MINUS
-SELECT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVENTORYQUANTITY FROM INTERMEDIATE;
-    
-    `
-
-    // `
-    // CREATE OR REPLACE VIEW TEMP_DIVIDEND AS
-    // SELECT DISTINCT ITEMNAME FROM ITEM;
-    // CREATE OR REPLACE VIEW DIVISOR AS
-    // SELECT DISTINCT ITEMID AS ITEMID FROM TEMP;
-    // CREATE OR REPLACE VIEW INTERMEDIATE AS
-    // SELECT * FROM DIVISOR, TEMP_DIVIDEND
-    // MINUS
-    // SELECT * FROM ITEM;
-
-    // SELECT DISTINCT ITEMNAME FROM ITEM
-    // MINUS
-    // SELECT DISTINCT ITEMNAME FROM INTERMEDIATE;
-    // `;
     requestResult(executeQuery);
   };
 
   return (
     <>
-
       <div className={styles.container}>
         <div className="flex h-full w-full text-slate-900">
           <div className="bg-slate-200 h-full mr-3 p-2 overflow-y-scroll">
@@ -884,29 +791,38 @@ SELECT INVENTORYID, CHARACTERID, HEALTH, OVERALLLEVEL, MANA, CHARACTERNAME, INVE
               Database Query
             </h1>
             Tables:
-              <ListGroup as={"ul"}>
-                {tableNames.map((tableName: any, count) => {
-                  return (
-                    <div className={styles.table_item} key={`${tableName.TABLE_NAME}`}>
-                      <ListGroup.Item
-                        key={`count${tableName}`}
-                        as={"li"}
-                        className="mt-2"
-                        onClick={() => {
-                          changeVisibleTable(tableName.TABLE_NAME);
-                          setDistinct(false)
-                        }}
-                      >
-                         <div className={styles.table_item}>{tableName.TABLE_NAME}</div>
-                      </ListGroup.Item>
-                    </div>
-                  );
-                })}
-              </ListGroup>
+            <ListGroup as={"ul"}>
+              {tableNames.map((tableName: any, count) => {
+                return (
+                  <div
+                    className={styles.table_item}
+                    key={`${tableName.TABLE_NAME}`}
+                  >
+                    <ListGroup.Item
+                      key={`count${tableName}`}
+                      as={"li"}
+                      className="mt-2"
+                      onClick={() => {
+                        changeVisibleTable(tableName.TABLE_NAME);
+                        setDistinct(false);
+                      }}
+                    >
+                      <div className={styles.table_item}>
+                        {tableName.TABLE_NAME}
+                      </div>
+                    </ListGroup.Item>
+                  </div>
+                );
+              })}
+            </ListGroup>
           </div>
 
           <div>
-          <Alert isVisible={alert.isVisible} msg={alert.msg} op_result={alert.op_result} />
+            <Alert
+              isVisible={alert.isVisible}
+              msg={alert.msg}
+              op_result={alert.op_result}
+            />
             <div className={styles.btn_group}>
               <ButtonGroup aria-label="Basic example">
                 {operations.map((operation, count) => {
