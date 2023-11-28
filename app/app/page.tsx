@@ -83,6 +83,17 @@ const Home = () => {
     "UPDATE"
   ];
 
+  const OPERATION_FRONTEND = {
+    "Add new": "INSERT",
+    "Remove": "DELETE",
+    "Update": "UPDATE",
+    "View data": "PROJECT",
+    "Search within game": "SELECT",
+    "View multiple game entities": "JOIN",
+    "Calculate game statistics": "AGGREGATION",
+    "Game Summary": "Summary"
+  }
+
   const sanitizeInputs = (str: string) => {
     const patterns = [
       /--/,
@@ -173,7 +184,7 @@ const Home = () => {
   /* ************************************************************ */
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
-    if (checked) {
+    if (!checked) {
       console.log("checked");
       setProjectSelections((prevSelections) => [...prevSelections, key]);
     } else {
@@ -197,12 +208,16 @@ const Home = () => {
     const uniqueKeys = new Set(Object.keys(res[0]));
     const uniqueKeysArray = Array.from(uniqueKeys);
 
+
+    
     return uniqueKeysArray.map((key, index) => {
+
       return (
         <div key={`${key}-${index}`} className="text-black">
           <Form.Check
             type="checkbox"
             label={key}
+            
             onChange={(e) =>
               handleProjectCheckboxChange(
                 e.target.checked,
@@ -245,6 +260,7 @@ const Home = () => {
     setGroupByOperation("");
     setGroupBy([]);
     setWhereHavingStr("");
+    //setProjectSelections(["*"]);
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -338,21 +354,15 @@ const Home = () => {
       <>
         <div>
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Find
+            Find in {currTable}
           </h1>
-          <Form>
-            <div className={styles.project_form}>
-              {generateProjectElements(result)}
-            </div>
-          </Form>
         </div>
         <div>
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            From {currTable}
           </h1>
         </div>
         <div className="inline-flex space-x-4">
-          WHERE
+          Filter: 
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -360,6 +370,13 @@ const Home = () => {
             tableAttrributes={getTableAttributes()}
           />
         </div>
+          
+                  <Form>
+                  Visible Columns:
+            <div className={styles.project_form}>
+              {generateProjectElements(result)}
+            </div>
+          </Form>
       </>
     ),
 
@@ -367,7 +384,32 @@ const Home = () => {
       <>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Select
+            Combine
+          </h1>
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              {joinSelection ? joinSelection : "Select Table"}
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+          </Dropdown>
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            with {currTable} using 
+          </h1>
+        </div>
+        <div className="inline-flex space-x-4 mt-4">
+          
+          <WhereHaving
+            isWhere={false}
+            outputStr={whereHavingStr}
+            setOutputStr={setWhereHavingStr}
+            tableAttrributes={getTableAttributes()}
+            setAttrs={setAggrKeys}
+          />
+        </div>
+        <div className="inline-flex space-x-4">
+          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+            Show Columns: 
           </h1>
           <Form.Check
             type="checkbox"
@@ -381,31 +423,6 @@ const Home = () => {
               {generateProjectElements(joinTableResult, joinSelection)}
             </div>
           </Form>
-        </div>
-        <div className="inline-flex space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            From
-          </h1>
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-              {joinSelection ? joinSelection : "Select Table"}
-            </Dropdown.Toggle>
-
-            <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
-          </Dropdown>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            , {currTable}
-          </h1>
-        </div>
-        <div className="inline-flex space-x-4 mt-4">
-          WHERE
-          <WhereHaving
-            isWhere={false}
-            outputStr={whereHavingStr}
-            setOutputStr={setWhereHavingStr}
-            tableAttrributes={getTableAttributes()}
-            setAttrs={setAggrKeys}
-          />
         </div>
       </>
     ),
@@ -457,6 +474,7 @@ const Home = () => {
     AGGREGATION: (
       <div className="">
         <div className="flex justify-center items-center gap-2">
+          Get
           <div>
             <Form>
               <Dropdown>
@@ -480,7 +498,7 @@ const Home = () => {
               </Dropdown>
             </Form>
           </div>
-          (
+          of 
           <div>
             <Form>
               <Dropdown>
@@ -506,11 +524,11 @@ const Home = () => {
               </Dropdown>
             </Form>
           </div>
-          )
+          
         </div>
 
         <div className="flex justify-center items-center gap-2">
-          Group By
+          Optional Grouping: 
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -534,7 +552,7 @@ const Home = () => {
           </Form>
         </div>
         <div className="inline-flex space-x-4">
-          HAVING
+          Filter:
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -795,9 +813,9 @@ const Home = () => {
                 sideMenuVisible ? "" : "hidden"
               }`}
             >
-              Database Query
+              MyGameManager
             </h1>
-            Tables:
+            Game Data:
             <ListGroup as={"ul"}>
               {tableNames.map((tableName: any, count) => {
                 return (
@@ -832,13 +850,15 @@ const Home = () => {
             />
             <div className={styles.btn_group}>
               <ButtonGroup aria-label="Basic example">
-                {operations.map((operation, count) => {
+                {Object.keys(OPERATION_FRONTEND).map((operation, count) => {
+
+                  let sql_op = OPERATION_FRONTEND[operation as keyof typeof OPERATION_FRONTEND]
                   return (
                     <Button
                       key={count}
                       variant="outline-primary"
                       onClick={() => {
-                        setOperation(operation);
+                        setOperation(sql_op);
                       }}
                     >
                       {operation}
