@@ -71,11 +71,13 @@
   -webkit-appearance: none; /* Removes default webkit styles */
   appearance: none;
   /* Custom styles for the thumb */
-  width: 25px; /* Example: width of the thumb */
-  height: 25px; /* Example: height of the thumb */
-  background: #4CAF50; /* Example: background color of the thumb */
+  width: 50px; /* Example: width of the thumb */
+  height: 50px; /* Example: height of the thumb */
+  background: url('./87ea354ddd3407192d9691e1ae9a42db9ff753e725b3f77c2ca95b9d1000f0eb.png') no-repeat center center;
+  background-size: 100% 100%;
   cursor: pointer; /* Example: cursor style */
-  border-radius: 50%; /* Example: make it circular */
+  transform: translateY(-50%)
+
 }
 
 /* Styling the track of the slider within .form class */

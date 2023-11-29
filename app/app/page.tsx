@@ -319,20 +319,23 @@ const Home = () => {
       , "INVENTORYQUANTITY", "QUESTLEVEL", "REWARDQUANTITY"].includes(key)){
         return (
           <div key={index} >
-          <Form.Control
-            key={index}
-            type="range"
-            min="1"
-            max="100"
-            defaultValue="50"
-            placeholder={key}
-            onChange={(e) => {
-              const value = e.target.value
-              document.getElementById(`slider-value-display-${key}`).textContent = value
-              handleFunction(key, e.target.value)}
-            }
-          />
-          <span id = {`slider-value-display-${key}`}>50</span>
+            {key}
+            <Form.Control
+              key={index}
+              type="range"
+              min="1"
+              max="100"
+              defaultValue="50"
+              placeholder={key}
+              onChange={(e) => {
+                const sliderValueDisplay = document.getElementById(`slider-value-display-${key}`)
+                if(sliderValueDisplay){
+                  sliderValueDisplay.textContent = e.target.value
+                }
+                handleFunction(key, e.target.value)}
+              }
+            />
+            <span id = {`slider-value-display-${key}`}>50</span>
           </div>
         );
       }
