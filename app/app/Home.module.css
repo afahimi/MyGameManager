@@ -55,3 +55,34 @@
 .table_item:hover {
   color: rgb(63, 118, 176);
 }
+
+/* Styling the slider within .form class */
+.form input[type="range"] {
+  /* General styles for the slider */
+  background-color: #ddd; /* Example: background color */
+  height: 25px; /* Example: height of the slider */
+  -webkit-appearance: none; /* Removes default webkit styles */
+  margin: 10px 0; /* Example: margin */
+  width: 100%; /* Example: full width */
+}
+
+/* Styling the thumb of the slider within .form class */
+.form input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Removes default webkit styles */
+  appearance: none;
+  /* Custom styles for the thumb */
+  width: 25px; /* Example: width of the thumb */
+  height: 25px; /* Example: height of the thumb */
+  background: #4CAF50; /* Example: background color of the thumb */
+  cursor: pointer; /* Example: cursor style */
+  border-radius: 50%; /* Example: make it circular */
+}
+
+/* Styling the track of the slider within .form class */
+.form input[type="range"]::-webkit-slider-runnable-track {
+  /* Custom styles for the track */
+  width: 100%; /* Example: full width */
+  height: 8px; /* Example: height of the track */
+  background: #333; /* Example: background color of the track */
+  border-radius: 5px; /* Example: rounded corners */
+}

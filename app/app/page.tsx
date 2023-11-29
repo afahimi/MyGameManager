@@ -100,11 +100,11 @@ const Home = () => {
     CHARACTERINFO: "Character Info",
     CONTAINS: "Inventory Contents",
     COORDINATELOCATIONS: "Coordinate Locations",
-    DEVELOPS: "Develops",
+    DEVELOPS: "Player Skills",
     FACTIONS: "Factions",
     INTERACTIONS: "Player Interaction Log",
     INVENTORY: "Inventory",
-    ITEM: "Item",
+    ITEM: "Items",
     LOCATIONS: "Location",
     MEMBEROF: "Faction List",
     NONPLAYABLECHARACTER: "NPC Info",
@@ -314,14 +314,38 @@ const Home = () => {
     const keys = Object.keys(result[0]);
 
     return keys.map((key, index) => {
-      return (
-        <Form.Control
-          key={index}
-          type="text"
-          placeholder={key}
-          onChange={(e) => handleFunction(key, e.target.value)}
-        />
-      );
+
+      if(['HEALTH', "MANA", "OVERALLLEVEL", "CURRENTLEVEL", "INVENTORYSIZE"
+      , "INVENTORYQUANTITY", "QUESTLEVEL", "REWARDQUANTITY"].includes(key)){
+        return (
+          <div key={index} >
+          <Form.Control
+            key={index}
+            type="range"
+            min="1"
+            max="100"
+            defaultValue="50"
+            placeholder={key}
+            onChange={(e) => {
+              const value = e.target.value
+              document.getElementById(`slider-value-display-${key}`).textContent = value
+              handleFunction(key, e.target.value)}
+            }
+          />
+          <span id = {`slider-value-display-${key}`}>50</span>
+          </div>
+        );
+      }
+      else {
+        return (
+          <Form.Control
+            key={index}
+            type="text"
+            placeholder={key}
+            onChange={(e) => handleFunction(key, e.target.value)}
+          />
+        );
+      }
     });
   };
 
