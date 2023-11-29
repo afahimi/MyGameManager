@@ -37,7 +37,7 @@ type RecordType = Record<string, string>;
 const Home = () => {
   const [query, setQuery] = useState<RecordType>({});
   const [defaultQuery, setDefaultQuery] = useState("");
-  const [result, setResult] = useState([]);
+  const [result, setResult] = useState<any[]>([]);
 
   const [sideMenuVisible, setSideMenuVisible] = useState("true");
 
@@ -91,7 +91,28 @@ const Home = () => {
     "Search within game": "SELECT",
     "View multiple game entities": "JOIN",
     "Calculate game statistics": "AGGREGATION",
-    "Game Summary": "Summary"
+    "Game Summary": "SUMMARY"
+  }
+
+  const HIDDEN_TABLES = new Set(["CONTAINS"])
+
+  const USER_TABLE_NAME = {
+    CHARACTERINFO: "Character Info",
+    CONTAINS: "Inventory Contents",
+    COORDINATELOCATIONS: "Coordinate Locations",
+    DEVELOPS: "Develops",
+    FACTIONS: "Factions",
+    INTERACTIONS: "Player Interaction Log",
+    INVENTORY: "Inventory",
+    ITEM: "Item",
+    LOCATIONS: "Location",
+    MEMBEROF: "Faction List",
+    NONPLAYABLECHARACTER: "NPC Info",
+    PLAYER: "Player Info",
+    QUESTREWARDS: "Quest Rewards",
+    REWARDITEMS: "Reward Items",
+    SKILL: "Skill",
+    YIELDSQUEST: "Yields Quest"
   }
 
   const sanitizeInputs = (str: string) => {
@@ -167,7 +188,12 @@ const Home = () => {
         );
         setResult(updatedResult);
       } else {
-        setResult(result);
+        if (result.length == 0) {
+          setResult([["No results found"]]);
+        } else {
+          setResult(result);
+        }
+        
       }
       showAlert("SUCCESS!", "success");
     }
@@ -184,7 +210,7 @@ const Home = () => {
   /* ************************************************************ */
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
-    if (!checked) {
+    if (checked) {
       console.log("checked");
       setProjectSelections((prevSelections) => [...prevSelections, key]);
     } else {
@@ -320,6 +346,32 @@ const Home = () => {
     });
   };
 
+  const generateJoinUserElements = () => {
+    if (tableNames.length === 0) {
+      return null;
+    }
+
+    const joinTables = {
+      "Character Info and Inventory": "CHARACTERINFO",
+    }
+
+
+    return tableNames.map((tableName: any, count) => {
+      return (
+        <Dropdown.Item
+          key={count}
+          onClick={() => {
+            setJoinSelection(tableName.TABLE_NAME);
+            getJoinSelectTable(tableName.TABLE_NAME);
+            setDivisorColumn("");
+          }}
+        >
+          {tableName.TABLE_NAME}
+        </Dropdown.Item>
+      );
+    });
+  };
+
   const generateDivisionMenuElements = () => {
     let divisonQueries : any[] = ["Select all players who have all items"];
     let nestedAggQueries = Object.keys(nestedAggregation);
@@ -381,24 +433,25 @@ const Home = () => {
     ),
 
     JOIN: (
-      <>
-        <div className="inline-flex space-x-4">
+      <div className=" flex-col">
+        <div className="space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Combine
+            View
           </h1>
           <Dropdown>
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-              {joinSelection ? joinSelection : "Select Table"}
+              {joinSelection ? joinSelection : "...."}
             </Dropdown.Toggle>
 
             <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
           </Dropdown>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+          {/* <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
             with {currTable} using 
-          </h1>
+          </h1> */}
         </div>
+        Filter
         <div className="inline-flex space-x-4 mt-4">
-          
+         
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -417,14 +470,8 @@ const Home = () => {
             checked={distinct}
             onChange={(e) => setDistinct(e.target.checked)}
           />
-          <Form>
-            <div className={styles.project_form}>
-              {generateProjectElements(result)}
-              {generateProjectElements(joinTableResult, joinSelection)}
-            </div>
-          </Form>
         </div>
-      </>
+      </div>
     ),
 
     INSERT: (
@@ -658,30 +705,18 @@ const Home = () => {
       <>
         <div className="inline-flex space-x-4">
           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Select a Query to Answer:
+            What would you like to know?:
           </h1>
           <Dropdown>
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-              {divisionQuery ? divisionQuery : "Select Table"}
+              {divisionQuery ? divisionQuery : "....."}
             </Dropdown.Toggle>
             
             <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
           </Dropdown>
         </div>
       </>
-    ),
-    "RAW QUERY": (
-      <>
-        <Form>
-          <Form.Control
-            type="text"
-            placeholder="Enter raw SQL commands"
-            value={defaultQuery}
-            onChange={(e) => setDefaultQuery(e.target.value)}
-          />
-        </Form>
-      </>
-    ),
+    )
   };
 
   /* Given the values generate a query to execute and toss it to postRequest */
@@ -818,6 +853,9 @@ const Home = () => {
             Game Data:
             <ListGroup as={"ul"}>
               {tableNames.map((tableName: any, count) => {
+                if (HIDDEN_TABLES.has(tableName.TABLE_NAME)) {
+                  return null;
+                }
                 return (
                   <div
                     className={styles.table_item}
@@ -833,7 +871,7 @@ const Home = () => {
                       }}
                     >
                       <div className={styles.table_item}>
-                        {tableName.TABLE_NAME}
+                        {USER_TABLE_NAME[tableName.TABLE_NAME as keyof typeof USER_TABLE_NAME]}
                       </div>
                     </ListGroup.Item>
                   </div>
@@ -858,6 +896,7 @@ const Home = () => {
                       key={count}
                       variant="outline-primary"
                       onClick={() => {
+                        changeVisibleTable(currTable);
                         setOperation(sql_op);
                       }}
                     >
@@ -878,12 +917,12 @@ const Home = () => {
                   }}
                   variant="outline-danger"
                 >
-                  Reset View
+                  Clear
                 </Button>
               </div>
               <div className={styles.reset_btn}>
                 <Button onClick={handleExecuteQuery} variant="outline-primary">
-                  Execute Query
+                  Run
                 </Button>
               </div>
             </div>
@@ -902,7 +941,7 @@ const Home = () => {
                 <Spinner animation="border" />
               )}
             </div>
-            <div className={styles.table}>
+            {/* <div className={styles.table}>
               {(() => {
                 if (
                   joinTableResult.length > 0 &&
@@ -913,7 +952,7 @@ const Home = () => {
                   return <></>;
                 }
               })()}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

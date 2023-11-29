@@ -11,8 +11,8 @@ let OPERATORS = [
     "<",
     ">=",
     "<=",
-    "=",
-    "<>"
+    "equals",
+    "not equals"
 ]
 
 export {AGGREGATION_OPS, OPERATORS}

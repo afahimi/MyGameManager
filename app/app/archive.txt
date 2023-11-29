@@ -1,0 +1,46 @@
+// let OLD_JOIN = (
+//     <>
+//         <div className="inline-flex space-x-4">
+//           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+//             Combine
+//           </h1>
+//           <Dropdown>
+//             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+//               {joinSelection ? joinSelection : "Select Table"}
+//             </Dropdown.Toggle>
+
+//             <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
+//           </Dropdown>
+//           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+//             with {currTable} using 
+//           </h1>
+//         </div>
+//         <div className="inline-flex space-x-4 mt-4">
+          
+//           <WhereHaving
+//             isWhere={false}
+//             outputStr={whereHavingStr}
+//             setOutputStr={setWhereHavingStr}
+//             tableAttrributes={getTableAttributes()}
+//             setAttrs={setAggrKeys}
+//           />
+//         </div>
+//         <div className="inline-flex space-x-4">
+//           <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
+//             Show Columns: 
+//           </h1>
+//           <Form.Check
+//             type="checkbox"
+//             label="Distinct"
+//             checked={distinct}
+//             onChange={(e) => setDistinct(e.target.checked)}
+//           />
+//           <Form>
+//             <div className={styles.project_form}>
+//               {generateProjectElements(result)}
+//               {generateProjectElements(joinTableResult, joinSelection)}
+//             </div>
+//           </Form>
+//         </div>
+//       </>
+// )

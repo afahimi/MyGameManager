@@ -13,6 +13,12 @@ export default function WhereHaving(props: any) {
   function handleFormChange(index: number, key: string, e: any) {
     let oldOrAnd = whereClauses[index][key];
     let values = [...whereClauses];
+    if (e == "equals") {
+        e = "="
+    } 
+    if (e == "not equals") {
+        e = "<>"
+    }
     values[index][key] = e;
     setWhereClauses(values);
     //console.log(whereClauses, oldOrAnd) 
@@ -36,12 +42,18 @@ export default function WhereHaving(props: any) {
     let attrs = []
     for (let i = 0; i < whereClauses.length; i++) {
       let clause = whereClauses[i];
+      if (clause.op == "equals") {
+        clause.op = "="
+      } else if (clause.op == "not equals") {
+        clause.op = "<>"
+      }
       res += clause.attr + " " + clause.op + " " + clause.val + " " + clause.andOr + " ";
       attrs.push(clause.attr)
     }
     if (props.setAttrs != undefined) {
       props.setAttrs(attrs)
     }
+    console.log(res)
     props.setOutputStr(res);
   }
 
