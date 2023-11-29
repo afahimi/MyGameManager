@@ -80,7 +80,8 @@ const Home = () => {
     "SUMMARY",
     "INSERT",
     "DELETE",
-    "UPDATE"
+    "UPDATE",
+    "MULTIJOIN",
   ];
 
   const OPERATION_FRONTEND = {
@@ -89,9 +90,10 @@ const Home = () => {
     "Update": "UPDATE",
     "View data": "PROJECT",
     "Search within game": "SELECT",
+    "Character Overview": "MULTIJOIN",
     "View multiple game entities": "JOIN",
     "Calculate game statistics": "AGGREGATION",
-    "Game Summary": "SUMMARY"
+    "Game Summary": "SUMMARY",
   }
 
   const HIDDEN_TABLES = new Set(["CONTAINS"])
@@ -859,6 +861,16 @@ const Home = () => {
           executeQuery = nestedAggregation[divisionQuery]
         }
         
+        break;
+      
+      case "MULTIJOIN":
+        executeQuery = `
+          SELECT * FROM CHARACTERINFO
+          NATURAL JOIN PLAYER
+          NATURAL JOIN DEVELOPS
+          NATURAL JOIN COORDINATELOCATIONS
+          NATURAL JOIN INVENTORY
+        `
         break;
     }
 
