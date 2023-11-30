@@ -10,12 +10,18 @@
   align-items: center;
   height: 100vh;
   text-align: center;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+  url("./media/digital_art.png");
+  overflow: auto;
+  width: 100%;
 }
 
 .form {
   margin-top: 20px;
   margin-bottom: 20px;
   width: 85%;
+  display: flex;
+  justify-content: center;
 }
 
 .reset_btn {
@@ -50,6 +56,11 @@
 
 .table_item {
   cursor: pointer;
+  opacity: unset;
+}
+
+.main_section {
+  justify-content: center;
 }
 
 .table_item:hover {
@@ -73,11 +84,11 @@
   /* Custom styles for the thumb */
   width: 50px; /* Example: width of the thumb */
   height: 50px; /* Example: height of the thumb */
-  background: url('./87ea354ddd3407192d9691e1ae9a42db9ff753e725b3f77c2ca95b9d1000f0eb.png') no-repeat center center;
+  background: url("./media/87ea354ddd3407192d9691e1ae9a42db9ff753e725b3f77c2ca95b9d1000f0eb.png")
+    no-repeat center center;
   background-size: 100% 100%;
   cursor: pointer; /* Example: cursor style */
-  transform: translateY(-50%)
-
+  transform: translateY(-50%);
 }
 
 /* Styling the track of the slider within .form class */
