@@ -922,14 +922,22 @@ const Home = () => {
       case "AGGREGATION":
         if (groupBy[1] == undefined) {
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable}`;
-        } else {
+        }
+        
+        else {
           executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
         }
 
         if (whereHavingStr !== "") {
           console.log(aggrKeys);
-          executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
-          executeQuery += `HAVING ${whereHavingStr}`;
+          if (groupBy[1] == undefined) {
+            executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable} `;
+            executeQuery += `WHERE ${whereHavingStr}`;
+          } else {
+            executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
+            executeQuery += `HAVING ${whereHavingStr}`;
+          }
+
         }
         console.log(executeQuery);
         break;
