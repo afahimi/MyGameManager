@@ -47,13 +47,18 @@ export default function WhereHaving(props: any) {
       } else if (clause.op == "not equals") {
         clause.op = "<>"
       }
-      res += clause.attr + " " + clause.op + " " + clause.val + " " + clause.andOr + " ";
+      if (clause.attr.includes("NAME") || clause.attr.includes("COORDINATES")) {
+        res += clause.attr + " " + clause.op + " '" + clause.val + "' " + clause.andOr + " ";
+      } else {
+        res += clause.attr + " " + clause.op + " " + clause.val + " " + clause.andOr + " ";
+      }
+      
       attrs.push(clause.attr)
     }
     if (props.setAttrs != undefined) {
       props.setAttrs(attrs)
     }
-    console.log(res)
+    //console.log(res)
     props.setOutputStr(res);
   }
 

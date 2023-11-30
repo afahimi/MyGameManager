@@ -23,7 +23,12 @@ import { error, table } from "console";
 import { OracleServerRequest } from "./utils/functions.ts";
 import { divisionQueries } from "./utils/division_queries.ts";
 import { nestedAggregation } from "./utils/nested_aggregations.ts";
-import { AGGREGATION_OPS } from "./utils/constants.ts";
+import {
+  AGGREGATION_OPS,
+  PRIMARY_KEYS,
+  ATTRIBUTE_USER_IDS,
+  FOREIGN_KEYS,
+} from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
 import { exec } from "child_process";
 
@@ -86,20 +91,30 @@ const Home = () => {
 
   const OPERATION_FRONTEND = {
     "Add new": "INSERT",
-    "Remove": "DELETE",
-    "Update": "UPDATE",
+    Remove: "DELETE",
+    Update: "UPDATE",
     "View data": "PROJECT",
     "Search within game": "SELECT",
     "Character Overview": "MULTIJOIN",
     "View multiple game entities": "JOIN",
     "Calculate game statistics": "AGGREGATION",
     "Game Summary": "SUMMARY",
-  }
+  };
 
-  const HIDDEN_TABLES = new Set(["CONTAINS"])
+  // Put any non user friendly table names here
+  const HIDDEN_TABLES = new Set([
+    // "NONPLAYABLECHARACTER",
+    "QUESTREWARDS",
+    "REWARDITEMS",
+    "YIELDSQUEST",
+    "INVENTORY",
+    // "FACTIONS",
+    // "MEMBEROF",
+    // "INTERACTIONS",
+  ]);
 
   const USER_TABLE_NAME = {
-    CHARACTERINFO: "Character Info",
+    CHARACTERINFO: "Character",
     CONTAINS: "Inventory Contents",
     COORDINATELOCATIONS: "Coordinate Locations",
     DEVELOPS: "Player Skills",
@@ -114,8 +129,8 @@ const Home = () => {
     QUESTREWARDS: "Quest Rewards",
     REWARDITEMS: "Reward Items",
     SKILL: "Skill",
-    YIELDSQUEST: "Yields Quest"
-  }
+    YIELDSQUEST: "Yields Quest",
+  };
 
   const sanitizeInputs = (str: string) => {
     const patterns = [
@@ -180,8 +195,17 @@ const Home = () => {
   const requestResult = async (executeQuery: string) => {
     const result = await OracleServerRequest(executeQuery);
     console.log(result);
-    if (errorHandle(result).length > 0) {
+    const err_msg = errorHandle(result);
+    if (err_msg.length > 0) {
       showAlert("FAILURE: error exists", "fail");
+      if (err_msg.includes("02291")) {
+        result[0].ERROR = `Given value in ${
+          FOREIGN_KEYS[currTable as keyof typeof FOREIGN_KEYS]
+        } not found`;
+      } else if (err_msg.includes("00947")) {
+        result[0].ERROR = "Error: Missing inputs!";
+      }
+
       setResult(result);
     } else {
       if (["INSERT", "DELETE", "UPDATE"].includes(operation)) {
@@ -195,7 +219,6 @@ const Home = () => {
         } else {
           setResult(result);
         }
-        
       }
       showAlert("SUCCESS!", "success");
     }
@@ -205,9 +228,9 @@ const Home = () => {
     setAlert({ isVisible: true, msg, op_result });
 
     setTimeout(() => {
-        setAlert({ isVisible: false, msg: '', op_result: 'success' });
+      setAlert({ isVisible: false, msg: "", op_result: "success" });
     }, 3500);
-};
+  };
 
   /* ************************************************************ */
 
@@ -236,16 +259,12 @@ const Home = () => {
     const uniqueKeys = new Set(Object.keys(res[0]));
     const uniqueKeysArray = Array.from(uniqueKeys);
 
-
-    
     return uniqueKeysArray.map((key, index) => {
-
       return (
-        <div key={`${key}-${index}`} className="text-black">
+        <div key={`${key}-${index}`}>
           <Form.Check
             type="checkbox"
             label={key}
-            
             onChange={(e) =>
               handleProjectCheckboxChange(
                 e.target.checked,
@@ -288,7 +307,6 @@ const Home = () => {
     setGroupByOperation("");
     setGroupBy([]);
     setWhereHavingStr("");
-    //setProjectSelections(["*"]);
     try {
       let data: any = await getTableData(table_name);
       setResult(data);
@@ -313,14 +331,34 @@ const Home = () => {
     if (result.length === 0) {
       return null;
     }
-    const keys = Object.keys(result[0]);
+
+    let hasHandleFunc = handleFunction == handleInputChange;
+
+    let keys = PRIMARY_KEYS[currTable as keyof typeof PRIMARY_KEYS];
+    if (operation == "INSERT" || (!hasHandleFunc && operation == "UPDATE")) {
+      keys = Object.keys(result[0]);
+    }
 
     return keys.map((key, index) => {
+      let oldkey = key;
+      if (key in ATTRIBUTE_USER_IDS) {
+        key = ATTRIBUTE_USER_IDS[key as keyof typeof ATTRIBUTE_USER_IDS];
+      }
 
-      if(['HEALTH', "MANA", "OVERALLLEVEL", "CURRENTLEVEL", "INVENTORYSIZE"
-      , "INVENTORYQUANTITY", "QUESTLEVEL", "REWARDQUANTITY"].includes(key)){
+      if (
+        [
+          "HEALTH",
+          "MANA",
+          "OVERALLLEVEL",
+          "CURRENTLEVEL",
+          "INVENTORYSIZE",
+          "INVENTORYQUANTITY",
+          "QUESTLEVEL",
+          "REWARDQUANTITY",
+        ].includes(oldkey)
+      ) {
         return (
-          <div key={index} >
+          <div key={index}>
             {key}
             <Form.Control
               key={index}
@@ -330,24 +368,28 @@ const Home = () => {
               defaultValue="50"
               placeholder={key}
               onChange={(e) => {
-                const sliderValueDisplay = document.getElementById(`slider-value-display-${key}`)
-                if(sliderValueDisplay){
-                  sliderValueDisplay.textContent = e.target.value
+                const sliderValueDisplay = document.getElementsByClassName(
+                  `slider-value-display-${key}-${hasHandleFunc}`
+                )[0];
+                // console.log(handleFunction == handleInputChange)
+                if (sliderValueDisplay) {
+                  sliderValueDisplay.textContent = e.target.value;
                 }
-                handleFunction(key, e.target.value)}
-              }
+                handleFunction(oldkey, e.target.value);
+              }}
             />
-            <span id = {`slider-value-display-${key}`}>50</span>
+            <span className={`slider-value-display-${key}-${hasHandleFunc}`}>
+              50
+            </span>
           </div>
         );
-      }
-      else {
+      } else {
         return (
           <Form.Control
             key={index}
             type="text"
             placeholder={key}
-            onChange={(e) => handleFunction(key, e.target.value)}
+            onChange={(e) => handleFunction(oldkey, e.target.value)}
           />
         );
       }
@@ -382,8 +424,7 @@ const Home = () => {
 
     const joinTables = {
       "Character Info and Inventory": "CHARACTERINFO",
-    }
-
+    };
 
     return tableNames.map((tableName: any, count) => {
       return (
@@ -402,7 +443,7 @@ const Home = () => {
   };
 
   const generateDivisionMenuElements = () => {
-    let divisonQueries : any[] = ["Select all players who have all items"];
+    let divisonQueries: any[] = ["Select all players who have all items"];
     let nestedAggQueries = Object.keys(nestedAggregation);
     let combinedList = nestedAggQueries.concat(divisonQueries);
 
@@ -434,16 +475,12 @@ const Home = () => {
     SELECT: (
       <>
         <div>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Find in {currTable}
-          </h1>
+          Find in {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
         </div>
-        <div>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          </h1>
-        </div>
-        <div className="inline-flex space-x-4">
-          Filter: 
+        <div></div>
+
+        <div className="space-x-4">
+          <div>Filter:</div>
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -451,22 +488,20 @@ const Home = () => {
             tableAttrributes={getTableAttributes()}
           />
         </div>
-          
-                  <Form>
-                  Visible Columns:
-            <div className={styles.project_form}>
-              {generateProjectElements(result)}
-            </div>
-          </Form>
+
+        <Form>
+          Visible Columns:
+          <div className={styles.project_form}>
+            {generateProjectElements(result)}
+          </div>
+        </Form>
       </>
     ),
 
     JOIN: (
       <div className=" flex-col">
+        View
         <div className="space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            View
-          </h1>
           <Dropdown>
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
               {joinSelection ? joinSelection : "...."}
@@ -474,13 +509,10 @@ const Home = () => {
 
             <Dropdown.Menu>{generateJoinElements()}</Dropdown.Menu>
           </Dropdown>
-          {/* <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            with {currTable} using 
-          </h1> */}
+          with {currTable}
         </div>
         Filter
         <div className="inline-flex space-x-4 mt-4">
-         
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -490,9 +522,7 @@ const Home = () => {
           />
         </div>
         <div className="inline-flex space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Show Columns: 
-          </h1>
+          Show Columns:
           <Form.Check
             type="checkbox"
             label="Distinct"
@@ -505,6 +535,7 @@ const Home = () => {
 
     INSERT: (
       <>
+        Add new {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
         <Form>
           <Form.Group>{createFormControlElements()}</Form.Group>
         </Form>
@@ -513,6 +544,7 @@ const Home = () => {
 
     DELETE: (
       <>
+        Remove a {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
         <Form>
           <Form.Group>{createFormControlElements()}</Form.Group>
         </Form>
@@ -522,13 +554,11 @@ const Home = () => {
     UPDATE: (
       <>
         <Form>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Target Row:
-          </h1>
+          Enter the ID of the{" "}
+          {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]} you want
+          to change
           <Form.Group>{createFormControlElements()}</Form.Group>
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            Set values (or leave blank to not update):
-          </h1>
+          Set values (or leave blank to not update):
           <Form.Group>
             {createFormControlElements(handleUpdateChange)}
           </Form.Group>
@@ -538,9 +568,7 @@ const Home = () => {
 
     PROJECT: (
       <>
-        <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-          Select
-        </h1>
+        Select
         <Form>
           <div className={styles.project_form}>{generateProjectElements()}</div>
         </Form>
@@ -555,17 +583,17 @@ const Home = () => {
             <Form>
               <Dropdown>
                 <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                  {groupByOperation}
+                  {AGGREGATION_OPS[groupByOperation as keyof typeof AGGREGATION_OPS]}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
-                  {AGGREGATION_OPS.map((elem) => {
+                  {Object.keys(AGGREGATION_OPS).map((elem) => {
                     return (
                       <>
                         <Dropdown.Item
                           key={elem}
                           onClick={() => setGroupByOperation(elem)}
                         >
-                          {elem}
+                          {AGGREGATION_OPS[elem as keyof typeof AGGREGATION_OPS]}
                         </Dropdown.Item>
                       </>
                     );
@@ -574,7 +602,7 @@ const Home = () => {
               </Dropdown>
             </Form>
           </div>
-          of 
+          of
           <div>
             <Form>
               <Dropdown>
@@ -600,11 +628,10 @@ const Home = () => {
               </Dropdown>
             </Form>
           </div>
-          
         </div>
 
         <div className="flex justify-center items-center gap-2">
-          Optional Grouping: 
+          Optional Grouping:
           <Form>
             <Dropdown>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
@@ -639,87 +666,115 @@ const Home = () => {
         </div>
       </div>
     ),
-    NESTED_AGGREGATION: (
-      <div className="">
-        <div className="flex justify-center items-center gap-2">
-          <div>
-            <Form>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                  {groupByOperation}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  {AGGREGATION_OPS.map((elem) => {
-                    return (
-                      <>
-                        <Dropdown.Item
-                          key={elem}
-                          onClick={() => setGroupByOperation(elem)}
-                        >
-                          {elem}
-                        </Dropdown.Item>
-                      </>
-                    );
-                  })}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Form>
-          </div>
-          (
-          <div>
-            <Form>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                  {groupBy[0]}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  {Array.from(getTableAttributes()).map((elem) => {
-                    return (
-                      <>
-                        <Dropdown.Item
-                          key={elem}
-                          onClick={() =>
-                            setGroupBy((old: any) => [elem, old[1]])
-                          }
-                        >
-                          {elem}
-                        </Dropdown.Item>
-                      </>
-                    );
-                  })}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Form>
-          </div>
-          )
-        </div>
+    // NESTED_AGGREGATION: (
+    //   <div className="">
+    //     <div className="flex justify-center items-center gap-2">
+    //       <div>
+    //         <Form>
+    //           <Dropdown>
+    //             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+    //               {groupByOperation}
+    //             </Dropdown.Toggle>
+    //             <Dropdown.Menu>
+    //               {Object.keys(AGGREGATION_OPS).map((elem) => {
+    //                 return (
+    //                   <>
+    //                     <Dropdown.Item
+    //                       key={elem}
+    //                       onClick={() => setGroupByOperation(elem)}
+    //                     >
+    //                       {AGGREGATION_OPS[elem]}
+    //                     </Dropdown.Item>
+    //                   </>
+    //                 );
+    //               })}
+    //             </Dropdown.Menu>
+    //           </Dropdown>
+    //         </Form>
+    //       </div>
+    //       (
+    //       <div>
+    //         <Form>
+    //           <Dropdown>
+    //             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+    //               {groupBy[0]}
+    //             </Dropdown.Toggle>
+    //             <Dropdown.Menu>
+    //               {Array.from(getTableAttributes()).map((elem) => {
+    //                 return (
+    //                   <>
+    //                     <Dropdown.Item
+    //                       key={elem}
+    //                       onClick={() =>
+    //                         setGroupBy((old: any) => [elem, old[1]])
+    //                       }
+    //                     >
+    //                       {elem}
+    //                     </Dropdown.Item>
+    //                   </>
+    //                 );
+    //               })}
+    //             </Dropdown.Menu>
+    //           </Dropdown>
+    //         </Form>
+    //       </div>
+    //       )
+    //     </div>
 
-        <div className="flex justify-center items-center gap-2">
-          Group By
-          <Form>
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-                {groupBy[1]}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {Array.from(getTableAttributes()).map((elem) => {
-                  return (
-                    <>
-                      <Dropdown.Item
-                        key={`2-${elem}`}
-                        onClick={() => setGroupBy((old: any) => [old[0], elem])}
-                      >
-                        {elem}
-                      </Dropdown.Item>
-                    </>
-                  );
-                })}
-              </Dropdown.Menu>
-            </Dropdown>
-          </Form>
-        </div>
+    //     <div className="flex justify-center items-center gap-2">
+    //       Group By
+    //       <Form>
+    //         <Dropdown>
+    //           <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+    //             {groupBy[1]}
+    //           </Dropdown.Toggle>
+    //           <Dropdown.Menu>
+    //             {Array.from(getTableAttributes()).map((elem) => {
+    //               return (
+    //                 <>
+    //                   <Dropdown.Item
+    //                     key={`2-${elem}`}
+    //                     onClick={() => setGroupBy((old: any) => [old[0], elem])}
+    //                   >
+    //                     {elem}
+    //                   </Dropdown.Item>
+    //                 </>
+    //               );
+    //             })}
+    //           </Dropdown.Menu>
+    //         </Dropdown>
+    //       </Form>
+    //     </div>
+    //     <div className="inline-flex space-x-4">
+    //       HAVING
+    //       <WhereHaving
+    //         isWhere={false}
+    //         outputStr={whereHavingStr}
+    //         setOutputStr={setWhereHavingStr}
+    //         tableAttrributes={getTableAttributes()}
+    //         setAttrs={setAggrKeys}
+    //       />
+    //     </div>
+    //   </div>
+    // ),
+    SUMMARY: (
+      <>
         <div className="inline-flex space-x-4">
-          HAVING
+          What would you like to know?:
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              {divisionQuery ? divisionQuery : "....."}
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
+          </Dropdown>
+        </div>
+      </>
+    ),
+    MULTIJOIN: (
+      <>
+        Filter
+        <div className="inline-flex space-x-4 mt-4">
           <WhereHaving
             isWhere={false}
             outputStr={whereHavingStr}
@@ -728,32 +783,26 @@ const Home = () => {
             setAttrs={setAggrKeys}
           />
         </div>
-      </div>
-    ),
-    SUMMARY: (
-      <>
         <div className="inline-flex space-x-4">
-          <h1 className={`text-xl font text-slate-950 text-middle font-bold`}>
-            What would you like to know?:
-          </h1>
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-              {divisionQuery ? divisionQuery : "....."}
-            </Dropdown.Toggle>
-            
-            <Dropdown.Menu>{generateDivisionMenuElements()}</Dropdown.Menu>
-          </Dropdown>
+          Show Columns:
+          <Form.Check
+            type="checkbox"
+            label="Distinct"
+            checked={distinct}
+            onChange={(e) => setDistinct(e.target.checked)}
+          />
         </div>
       </>
-    )
+    ),
   };
 
   /* Given the values generate a query to execute and toss it to postRequest */
-  const handleExecuteQuery = async () => {
+  const handleExecuteQuery = async (op: string = operation) => {
+    console.log("operation: ", op);
     setResult([]);
     let executeQuery = "";
     let where_clause = "";
-    switch (operation) {
+    switch (op) {
       case "SELECT":
         let string = defaultQuery ? `${defaultQuery}` : "*";
         setProjectSelections([]);
@@ -778,7 +827,7 @@ const Home = () => {
             return typeof converted === "number" ? converted : `'${converted}'`;
           })
           .join(",");
-        executeQuery = `INSERT INTO ${currTable} VALUES (${values}); COMMIT`;
+        executeQuery = `INSERT INTO ${currTable} VALUES (${sanitizeInputs(values)}); COMMIT`;
         break;
 
       case "DELETE":
@@ -788,7 +837,7 @@ const Home = () => {
           })
           .join(" AND ");
 
-        executeQuery = `DELETE FROM ${currTable} WHERE ${condition}; COMMIT`;
+        executeQuery = `DELETE FROM ${currTable} WHERE ${sanitizeInputs(condition)}; COMMIT`;
         break;
 
       case "UPDATE":
@@ -806,7 +855,7 @@ const Home = () => {
             return returnProperString(key, value);
           })
           .join(", ");
-        executeQuery = `UPDATE ${currTable} SET ${updates} WHERE ${targetRow}; COMMIT`;
+        executeQuery = `UPDATE ${currTable} SET ${sanitizeInputs(updates)} WHERE ${targetRow}; COMMIT`;
         setUpdateValues({});
         break;
 
@@ -835,6 +884,37 @@ const Home = () => {
 
         break;
 
+      case "MULTIJOIN":
+        where_clause = defaultQuery
+          ? sanitizeInputs(defaultQuery) !== ""
+            ? `WHERE ${sanitizeInputs(defaultQuery)}`
+            : ""
+          : "";
+        let distinctOn2 = distinct ? "DISTINCT" : "";
+        // SELECT ${distinctOn2} CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, SKILLNAME, LOCATIONNAME, INVENTORYSIZE FROM CHARACTERINFO
+        //   NATURAL JOIN PLAYER
+        //   NATURAL JOIN DEVELOPS
+        //   NATURAL JOIN COORDINATELOCATIONS
+        //   NATURAL JOIN INVENTORY
+        //   NATURAL JOIN CONTAINS
+        executeQuery = `
+        SELECT ${distinctOn2} CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, SKILLNAME, LOCATIONNAME, INVENTORYSIZE FROM CHARACTERINFO
+          NATURAL JOIN PLAYER
+          NATURAL JOIN DEVELOPS
+          NATURAL JOIN COORDINATELOCATIONS
+          NATURAL JOIN INVENTORY
+          NATURAL JOIN CONTAINS 
+        `;
+
+        // JOIN COORDINATELOCATIONS ON CHARACTERINFO.common_column = COORDINATELOCATIONS.common_column
+        //     JOIN INVENTORY ON CHARACTERINFO.common_column = INVENTORY.common_column
+        //     JOIN CONTAINS ON CHARACTERINFO.common_column = CONTAINS.common_column
+        //     LEFT JOIN DEVELOPS ON CHARACTERINFO.CHARACTERID = DEVELOPS.CHARACTERID;
+        if (whereHavingStr !== "") {
+          executeQuery += `WHERE ${whereHavingStr}`;
+        }
+        break;
+
       case "RAW QUERY":
         executeQuery = defaultQuery;
         break;
@@ -858,19 +938,9 @@ const Home = () => {
         if (divisionQuery in divisionQueries) {
           executeQuery = divisionQuery ? divisionQueries[divisionQuery] : "";
         } else {
-          executeQuery = nestedAggregation[divisionQuery]
+          executeQuery = nestedAggregation[divisionQuery];
         }
-        
-        break;
-      
-      case "MULTIJOIN":
-        executeQuery = `
-          SELECT * FROM CHARACTERINFO
-          NATURAL JOIN PLAYER
-          NATURAL JOIN DEVELOPS
-          NATURAL JOIN COORDINATELOCATIONS
-          NATURAL JOIN INVENTORY
-        `
+
         break;
     }
 
@@ -880,10 +950,10 @@ const Home = () => {
   return (
     <>
       <div className={styles.container}>
-        <div className="flex h-full w-full text-slate-900">
-          <div className="bg-slate-200 h-full mr-3 p-2 overflow-y-scroll">
+        <div className="flex h-full w-full text-white min-h-full">
+          <div className="bg-opacity-50 bg-slate-800 h-full mr-3 p-2 overflow-y-scroll">
             <h1
-              className={`p-12 text-3xl font-onest text-slate-950 ${
+              className={`p-12 text-3xl font-onest text-white ${
                 sideMenuVisible ? "" : "hidden"
               }`}
             >
@@ -910,7 +980,11 @@ const Home = () => {
                       }}
                     >
                       <div className={styles.table_item}>
-                        {USER_TABLE_NAME[tableName.TABLE_NAME as keyof typeof USER_TABLE_NAME]}
+                        {
+                          USER_TABLE_NAME[
+                            tableName.TABLE_NAME as keyof typeof USER_TABLE_NAME
+                          ]
+                        }
                       </div>
                     </ListGroup.Item>
                   </div>
@@ -919,7 +993,7 @@ const Home = () => {
             </ListGroup>
           </div>
 
-          <div>
+          <div className={styles.main_section}>
             <Alert
               isVisible={alert.isVisible}
               msg={alert.msg}
@@ -928,15 +1002,22 @@ const Home = () => {
             <div className={styles.btn_group}>
               <ButtonGroup aria-label="Basic example">
                 {Object.keys(OPERATION_FRONTEND).map((operation, count) => {
-
-                  let sql_op = OPERATION_FRONTEND[operation as keyof typeof OPERATION_FRONTEND]
+                  let sql_op =
+                    OPERATION_FRONTEND[
+                      operation as keyof typeof OPERATION_FRONTEND
+                    ];
                   return (
                     <Button
                       key={count}
-                      variant="outline-primary"
+                      variant="primary"
                       onClick={() => {
-                        changeVisibleTable(currTable);
                         setOperation(sql_op);
+                        console.log(sql_op);
+                        if (sql_op == "MULTIJOIN") {
+                          handleExecuteQuery("MULTIJOIN");
+                        } else {
+                          changeVisibleTable(currTable);
+                        }
                       }}
                     >
                       {operation}
@@ -952,7 +1033,11 @@ const Home = () => {
               <div className={styles.reset_btn}>
                 <Button
                   onClick={() => {
-                    changeVisibleTable(currTable);
+                    if (operation == "MULTIJOIN") {
+                      handleExecuteQuery("MULTIJOIN");
+                    } else {
+                      changeVisibleTable(currTable);
+                    }
                   }}
                   variant="outline-danger"
                 >
@@ -960,27 +1045,35 @@ const Home = () => {
                 </Button>
               </div>
               <div className={styles.reset_btn}>
-                <Button onClick={handleExecuteQuery} variant="outline-primary">
+                <Button
+                  onClick={() => {
+                    handleExecuteQuery();
+                  }}
+                  variant="outline-primary"
+                >
                   Run
                 </Button>
               </div>
             </div>
-            <div className="text-cyan-800">
+            {/*<div className="text-cyan-800">
               {currTable
                 ? `Current Table: ${currTable}`
                 : "Select a table to view"}
-            </div>
-            <div className="text-cyan-800">
+              </div>
+              
+              <div className="text-cyan-800">
               {operation ? `Current Operation: ${operation}` : null}
             </div>
+            */}
+
             <div className={styles.table}>
               {result.length > 0 ? (
                 <DataTable data={result} />
               ) : (
-                <Spinner animation="border" />
+                <Spinner animation="border" variant="light" />
               )}
             </div>
-            {/* <div className={styles.table}>
+            <div className={styles.table}>
               {(() => {
                 if (
                   joinTableResult.length > 0 &&
@@ -991,7 +1084,10 @@ const Home = () => {
                   return <></>;
                 }
               })()}
-            </div> */}
+            </div>
+            <br />
+            <br />
+            <br />
           </div>
         </div>
       </div>
