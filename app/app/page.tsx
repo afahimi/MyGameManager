@@ -547,19 +547,28 @@ const Home = () => {
 
     INSERT: (
       <>
-        Add new {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div>
+            Add new 
+          </div>
+          <div>
+            {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
+          </div>
         <Form>
           <Form.Group>{createFormControlElements()}</Form.Group>
         </Form>
+        </div>
       </>
     ),
 
     DELETE: (
       <>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
         Remove a {USER_TABLE_NAME[currTable as keyof typeof USER_TABLE_NAME]}
         <Form>
           <Form.Group>{createFormControlElements()}</Form.Group>
         </Form>
+        </div>
       </>
     ),
 
