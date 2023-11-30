@@ -28,6 +28,7 @@ import {
   PRIMARY_KEYS,
   ATTRIBUTE_USER_IDS,
   FOREIGN_KEYS,
+  CHILDREN_TABLE
 } from "./utils/constants.ts";
 import WhereHaving from "./components/where_having.tsx";
 import { exec } from "child_process";
@@ -136,7 +137,6 @@ const Home = () => {
     const patterns = [
       /--/,
       /;/,
-      /'/,
       /"/,
       /\bDROP\b/i,
       /\bSELECT\b/i,
@@ -204,9 +204,21 @@ const Home = () => {
         } not found`;
       } else if (err_msg.includes("00947")) {
         result[0].ERROR = "Error: Missing inputs!";
+      } else if (err_msg.includes("00936")) {
+        result[0].ERROR = "Error: Missing condition or inputs!"
+      } else if (err_msg.includes("01747")) {
+        result[0].ERROR = "Error: Specify an attribute to update!"
+      } else if (err_msg.includes("00904")) {
+        result[0].ERROR = "Error: Need to identify all Atrributes!"
+      } else if (err_msg.includes("01722")) {
+        result[0].ERROR = "Error: Invalid input type!"
+      } else if (err_msg.includes("00979")) {
+        result[0].ERROR = "Error: Optional Grouping and Filter need to be Same";
+      } else if (err_msg.includes("02292")) {
+        result[0].ERROR = `Need to delete attributes in ${CHILDREN_TABLE[currTable as keyof typeof CHILDREN_TABLE]}`;
       }
-
       setResult(result);
+
     } else {
       if (["INSERT", "DELETE", "UPDATE"].includes(operation)) {
         const updatedResult = await OracleServerRequest(

@@ -49,6 +49,21 @@ let FOREIGN_KEYS = {
     
   };
 
+  let CHILDREN_TABLE = {
+    "LOCATIONS": ["Coordinate Locations"],
+    "COORDINATELOCATIONS": ["Character"],
+    "CHARACTERINFO": ["Faction List", "Player Skills", "Player Info", "NPC Info"],
+    "FACTIONS": ["Faction List"],
+    "SKILL": ["Player Skills"],
+    "INVENTORY": ["Inventory Contents"],
+    "ITEM": ["Inventory Contents", "Reward Items"],
+    "PLAYER": ["Player Interaction Log"],
+    "NONPLAYABLECHARACTER": ["Player Interaction Log"],
+    "INTERACTIONS": ["Yields Quest"],
+    "YIELDSQUEST": ["Quest Rewards"],
+    "REWARDITEMS": ["Quest Rewards"]
+  };
+
 let ATTRIBUTE_USER_IDS = {
     CHARACTERID: "Character ID",
     INVENTORYID: "Inventory ID",
@@ -64,4 +79,4 @@ let ATTRIBUTE_USER_IDS = {
 }
 
 
-export {AGGREGATION_OPS, OPERATORS, PRIMARY_KEYS, ATTRIBUTE_USER_IDS, FOREIGN_KEYS}
+export {AGGREGATION_OPS, OPERATORS, PRIMARY_KEYS, ATTRIBUTE_USER_IDS, FOREIGN_KEYS, CHILDREN_TABLE}
