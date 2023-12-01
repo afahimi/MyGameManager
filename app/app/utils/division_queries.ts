@@ -1,7 +1,8 @@
-export type DivisionQueries = {
+  export type DivisionQueries = {
     [key: string]: string;
   };
 
+/* Division query */
 export const divisionQueries: DivisionQueries = {
   "Select all players who have all items": `
     CREATE OR REPLACE VIEW DIVIDEND AS

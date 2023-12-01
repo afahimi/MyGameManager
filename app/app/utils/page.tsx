@@ -8,15 +8,6 @@ app.use(cors());
 
 const PORT = 8080;
 
-// app.get("/api/home", (req: any, res: any) => {
-//   res.send({ message: "Welcome to the Home Page!" });
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`Server listening on ${PORT}`);
-// });
-
-
 async function runApp() {
   console.log('ran runapp')
   let connection;

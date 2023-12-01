@@ -2,6 +2,7 @@ export type NestedAggregation = {
   [key: string]: string;
 };
 
+/* Queries for aggregation, nested aggregation and nested queries with aggregation (including group by, having) */
 export const nestedAggregation: NestedAggregation = {
   "Players with No Items": `SELECT P.CharacterID, C.CharacterName
      FROM Player P, CharacterInfo C

@@ -1,3 +1,4 @@
+/* User friendly names of aggregations to be used */
 let AGGREGATION_OPS = {
     "SUM" : "Sum of",
     "MIN" : "Minimum of", 
@@ -5,7 +6,7 @@ let AGGREGATION_OPS = {
     "AVG" : "Average of",
     "COUNT" : "Count of"
 }
-
+ /* List of operators for WHERE clause and etc. */
 let OPERATORS = [
     ">",
     "<",
@@ -15,6 +16,7 @@ let OPERATORS = [
     "not equals"
 ]
 
+/* List of the primary keys of each table */
 let PRIMARY_KEYS = {
     CHARACTERINFO: ["CHARACTERID"],
     CONTAINS: ["INVENTORYID", "ITEMID"],
@@ -34,6 +36,7 @@ let PRIMARY_KEYS = {
     YIELDSQUEST: ["QUESTID", "PLAYERCHARACTERID", "NONPLAYABLECHARACTERID"]
 }
 
+/* List of the foreign keys of each table */
 let FOREIGN_KEYS = {
     "COORDINATELOCATIONS": "Location",
     "CHARACTERINFO": "Coordinate Locations",
@@ -49,7 +52,8 @@ let FOREIGN_KEYS = {
     
   };
 
-  let CHILDREN_TABLE = {
+/* List of the tables that have foregin keys referencing the corresponding table */
+let CHILDREN_TABLE = {
     "LOCATIONS": ["Coordinate Locations"],
     "COORDINATELOCATIONS": ["Character"],
     "CHARACTERINFO": ["Faction List", "Player Skills", "Player Info", "NPC Info"],
@@ -62,8 +66,9 @@ let FOREIGN_KEYS = {
     "INTERACTIONS": ["Yields Quest"],
     "YIELDSQUEST": ["Quest Rewards"],
     "REWARDITEMS": ["Quest Rewards"]
-  };
+};
 
+/* User friendly names of primary keys of each table */
 let ATTRIBUTE_USER_IDS = {
     CHARACTERID: "Character ID",
     INVENTORYID: "Inventory ID",

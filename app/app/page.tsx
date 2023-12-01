@@ -11,12 +11,9 @@ import ListGroup from "react-bootstrap/ListGroup";
 import Spinner from "react-bootstrap/Spinner";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
-
 import Alert from "./components/Alert.tsx";
 import { AlertProperty } from "./components/Alert.tsx";
-
 import { UseSelector, useSelector } from "react-redux/es/hooks/useSelector";
-
 import { getAllTableNames, getTableData } from "./utils/functions";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import { error, table } from "console";
@@ -77,7 +74,7 @@ const Home = () => {
   interface OracleError {
     ERROR: string;
   }
-  /* Helper functions for error handling or input sanitizing */
+  /* This is the set of operations */
   const operations = [
     "SELECT",
     "PROJECT",
@@ -90,6 +87,7 @@ const Home = () => {
     "MULTIJOIN",
   ];
 
+  /* The operations that will be shown on the front end */
   const OPERATION_FRONTEND = {
     "Add new": "INSERT",
     Remove: "DELETE",
@@ -102,7 +100,7 @@ const Home = () => {
     "Game Summary": "SUMMARY",
   };
 
-  // Put any non user friendly table names here
+  
   const HIDDEN_TABLES = new Set([
     // "NONPLAYABLECHARACTER",
     "QUESTREWARDS",
@@ -114,6 +112,7 @@ const Home = () => {
     // "INTERACTIONS",
   ]);
 
+  /* Tables name that will be shopn on the front end */
   const USER_TABLE_NAME = {
     CHARACTERINFO: "Character",
     CONTAINS: "Inventory Contents",
@@ -133,6 +132,7 @@ const Home = () => {
     YIELDSQUEST: "Yields Quest",
   };
 
+  /* Sanitize inputs to prevent malicious inputs to the database */
   const sanitizeInputs = (str: string) => {
     const patterns = [
       /--/,
@@ -163,6 +163,7 @@ const Home = () => {
     return str;
   };
 
+  /* functions to put integers as integer format for the json passed to the backend */
   const convertStringToIntIfPossible = (str: string) => {
     if (/^\d+$/.test(str)) {
       return parseInt(str, 10);
@@ -178,7 +179,9 @@ const Home = () => {
       ? `${key} = ${converted}`
       : `${key} = '${converted}'`;
   };
+  /*********************************************************************************/
 
+  /* Error notifying function to indicate whether an error was sent from the backend */
   const errorHandle = (err: OracleError[]) => {
     if (err && err.length > 0) {
       for (const element of err) {
@@ -192,6 +195,7 @@ const Home = () => {
     return "";
   };
 
+  /* Create custom error messages based on the error code */
   const requestResult = async (executeQuery: string) => {
     const result = await OracleServerRequest(executeQuery);
     console.log(result);
@@ -224,6 +228,7 @@ const Home = () => {
       setResult(result);
 
     } else {
+      /* For insert, delete and update we sent a separate query to show the updated result */
       if (["INSERT", "DELETE", "UPDATE"].includes(operation)) {
         const updatedResult = await OracleServerRequest(
           `SELECT * FROM ${currTable}`
@@ -240,6 +245,7 @@ const Home = () => {
     }
   };
 
+  /* Alerting function to notify success or failure to the user */
   const showAlert = (msg: string, op_result: "success" | "fail") => {
     setAlert({ isVisible: true, msg, op_result });
 
@@ -248,7 +254,6 @@ const Home = () => {
     }, 3500);
   };
 
-  /* ************************************************************ */
 
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
     if (checked) {
@@ -488,6 +493,11 @@ const Home = () => {
     [key: string]: JSX.Element;
   }
 
+
+  /* This function is in charge of the rendering of the website, 
+   * depending on the current operation it generates tsx to render
+   * on the UI.
+   */
   const operationUI: OperationUI = {
     SELECT: (
       <>
@@ -692,97 +702,6 @@ const Home = () => {
         </div>
       </div>
     ),
-    // NESTED_AGGREGATION: (
-    //   <div className="">
-    //     <div className="flex justify-center items-center gap-2">
-    //       <div>
-    //         <Form>
-    //           <Dropdown>
-    //             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-    //               {groupByOperation}
-    //             </Dropdown.Toggle>
-    //             <Dropdown.Menu>
-    //               {Object.keys(AGGREGATION_OPS).map((elem) => {
-    //                 return (
-    //                   <>
-    //                     <Dropdown.Item
-    //                       key={elem}
-    //                       onClick={() => setGroupByOperation(elem)}
-    //                     >
-    //                       {AGGREGATION_OPS[elem]}
-    //                     </Dropdown.Item>
-    //                   </>
-    //                 );
-    //               })}
-    //             </Dropdown.Menu>
-    //           </Dropdown>
-    //         </Form>
-    //       </div>
-    //       (
-    //       <div>
-    //         <Form>
-    //           <Dropdown>
-    //             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-    //               {groupBy[0]}
-    //             </Dropdown.Toggle>
-    //             <Dropdown.Menu>
-    //               {Array.from(getTableAttributes()).map((elem) => {
-    //                 return (
-    //                   <>
-    //                     <Dropdown.Item
-    //                       key={elem}
-    //                       onClick={() =>
-    //                         setGroupBy((old: any) => [elem, old[1]])
-    //                       }
-    //                     >
-    //                       {elem}
-    //                     </Dropdown.Item>
-    //                   </>
-    //                 );
-    //               })}
-    //             </Dropdown.Menu>
-    //           </Dropdown>
-    //         </Form>
-    //       </div>
-    //       )
-    //     </div>
-
-    //     <div className="flex justify-center items-center gap-2">
-    //       Group By
-    //       <Form>
-    //         <Dropdown>
-    //           <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
-    //             {groupBy[1]}
-    //           </Dropdown.Toggle>
-    //           <Dropdown.Menu>
-    //             {Array.from(getTableAttributes()).map((elem) => {
-    //               return (
-    //                 <>
-    //                   <Dropdown.Item
-    //                     key={`2-${elem}`}
-    //                     onClick={() => setGroupBy((old: any) => [old[0], elem])}
-    //                   >
-    //                     {elem}
-    //                   </Dropdown.Item>
-    //                 </>
-    //               );
-    //             })}
-    //           </Dropdown.Menu>
-    //         </Dropdown>
-    //       </Form>
-    //     </div>
-    //     <div className="inline-flex space-x-4">
-    //       HAVING
-    //       <WhereHaving
-    //         isWhere={false}
-    //         outputStr={whereHavingStr}
-    //         setOutputStr={setWhereHavingStr}
-    //         tableAttrributes={getTableAttributes()}
-    //         setAttrs={setAggrKeys}
-    //       />
-    //     </div>
-    //   </div>
-    // ),
     SUMMARY: (
       <>
         <div className="inline-flex space-x-4">
@@ -813,7 +732,9 @@ const Home = () => {
     ),
   };
 
-  /* Given the values generate a query to execute and toss it to postRequest */
+  /* Depending on the operation this fuction generates the queries by collecting 
+  *  the inputs and sending it to the backend
+  */
   const handleExecuteQuery = async (op: string = operation) => {
     console.log("operation: ", op);
     setResult([]);
@@ -907,22 +828,12 @@ const Home = () => {
             ? `WHERE ${sanitizeInputs(defaultQuery)}`
             : ""
           : "";
-        // SELECT ${distinctOn2} CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, SKILLNAME, LOCATIONNAME, INVENTORYSIZE FROM CHARACTERINFO
-        //   NATURAL JOIN PLAYER
-        //   NATURAL JOIN DEVELOPS
-        //   NATURAL JOIN COORDINATELOCATIONS
-        //   NATURAL JOIN INVENTORY
-        //   NATURAL JOIN CONTAINS
         executeQuery = `
         SELECT DISTINCT CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, LOCATIONNAME, SKILLNAME FROM CHARACTERINFO
           LEFT JOIN PLAYER ON PLAYER.CHARACTERID = CHARACTERINFO.CHARACTERID
           LEFT JOIN COORDINATELOCATIONS ON COORDINATELOCATIONS.COORDINATES = CHARACTERINFO.COORDINATES
           LEFT JOIN DEVELOPS ON CHARACTERINFO.CHARACTERID = DEVELOPS.CHARACTERID
         `
-        // JOIN COORDINATELOCATIONS ON CHARACTERINFO.common_column = COORDINATELOCATIONS.common_column
-        //     JOIN INVENTORY ON CHARACTERINFO.common_column = INVENTORY.common_column
-        //     JOIN CONTAINS ON CHARACTERINFO.common_column = CONTAINS.common_column
-        //     LEFT JOIN DEVELOPS ON CHARACTERINFO.CHARACTERID = DEVELOPS.CHARACTERID;
         if (whereHavingStr !== "") {
           executeQuery += `WHERE ${sanitizeInputs(whereHavingStr)}`;
         }
@@ -1076,17 +987,6 @@ const Home = () => {
                 </Button>
               </div>
             </div>
-            {/*<div className="text-cyan-800">
-              {currTable
-                ? `Current Table: ${currTable}`
-                : "Select a table to view"}
-              </div>
-              
-              <div className="text-cyan-800">
-              {operation ? `Current Operation: ${operation}` : null}
-            </div>
-            */}
-
             <div className={styles.table}>
               {result.length > 0 ? (
                 <DataTable data={result} />

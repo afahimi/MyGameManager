@@ -1,11 +1,10 @@
-
-
+/* Gets all the table names to render on front end */
 export async function getAllTableNames() {
     let query : string = `SELECT table_name FROM all_tables WHERE owner = '${process.env.ORACLE_USERNAME}'`
     let result: object = await OracleServerRequest(query)
     return result
 }
-
+/* Get the table for corresponding table name */
 export async function getTableData(table_name : string) {
     let query : string = `SELECT * FROM ${table_name}`
     let result: object = await OracleServerRequest(query)
