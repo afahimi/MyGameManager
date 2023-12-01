@@ -188,9 +188,12 @@ INSERT INTO Skill (SkillName, SkillType) VALUES ('City Guard', 'Defense');
 COMMIT;
 
 INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Sky Slash', 1382, 10);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Forest Heal', 1382, 18);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('End Shield', 1382, 20);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Sea Wave', 1382, 5);
+INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('City Guard', 1382, 2);
 INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Forest Heal', 3312, 5);
 INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('Forest Heal', 5869, 3);
-INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('End Shield', 1129, 8);
 INSERT INTO Develops (SkillName, CharacterID, CurrentLevel) VALUES ('City Guard', 1269, 2);
 COMMIT;
 
@@ -230,7 +233,6 @@ INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1001, 1005
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1002, 1002, 1);
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1003, 1003, 5);
 INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1004, 1004, 2);
-INSERT INTO Contains (InventoryID, ItemID, InventoryQuantity) VALUES (1005, 1005, 3);
 COMMIT;
 
 INSERT INTO Interactions (PlayerCharacterID, NonPlayableCharacterCharacterID, InteractionTime, InteractionType) 
