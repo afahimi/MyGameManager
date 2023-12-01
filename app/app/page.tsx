@@ -97,7 +97,7 @@ const Home = () => {
     "View data": "PROJECT",
     "Search within game": "SELECT",
     "Character Overview": "MULTIJOIN",
-    "View multiple game entities": "JOIN",
+    // "View multiple game entities": "JOIN",
     "Calculate game statistics": "AGGREGATION",
     "Game Summary": "SUMMARY",
   };
@@ -137,7 +137,6 @@ const Home = () => {
     const patterns = [
       /--/,
       /;/,
-      /"/,
       /\bDROP\b/i,
       /\bSELECT\b/i,
       /\bINSERT\b/i,
@@ -154,7 +153,7 @@ const Home = () => {
       /%/i,
       /_/i,
     ];
-
+    
     for (const pattern of patterns) {
       if (pattern.test(str)) {
         return "";
@@ -174,6 +173,7 @@ const Home = () => {
 
   const returnProperString = (key: string, value: string) => {
     const converted = convertStringToIntIfPossible(value);
+    console.log(converted)
     return typeof converted === "number"
       ? `${key} = ${converted}`
       : `${key} = '${converted}'`;
@@ -207,15 +207,19 @@ const Home = () => {
       } else if (err_msg.includes("00936")) {
         result[0].ERROR = "Error: Missing condition or inputs!"
       } else if (err_msg.includes("01747")) {
-        result[0].ERROR = "Error: Specify an attribute to update!"
+        result[0].ERROR = "Error: Specify an attribute to update!";
       } else if (err_msg.includes("00904")) {
-        result[0].ERROR = "Error: Need to identify all Atrributes!"
+        result[0].ERROR = "Error: Need to identify all Atrributes!";
       } else if (err_msg.includes("01722")) {
-        result[0].ERROR = "Error: Invalid input type!"
+        result[0].ERROR = "Error: Invalid input type!";
       } else if (err_msg.includes("00979")) {
         result[0].ERROR = "Error: Optional Grouping and Filter need to be Same";
       } else if (err_msg.includes("02292")) {
-        result[0].ERROR = `Need to delete attributes in ${CHILDREN_TABLE[currTable as keyof typeof CHILDREN_TABLE]}`;
+        result[0].ERROR = `Error : Need to delete attributes in ${CHILDREN_TABLE[currTable as keyof typeof CHILDREN_TABLE]}`;
+      } else if (err_msg.includes("00001")) {
+        result[0].ERROR = "Error : Can't have two or more of the same entries";
+      } else if (err_msg.includes("00933")) {
+        result[0].ERROR = "Error : Command is in incorrect, contact developer for help";
       }
       setResult(result);
 
@@ -298,6 +302,7 @@ const Home = () => {
   };
 
   const handleInputChange = (fieldName: string, value: string) => {
+    value.replace("\'", "\"")
     setQuery((prevQuery) => ({
       ...prevQuery,
       [fieldName]: value,
@@ -387,11 +392,11 @@ const Home = () => {
                 if (sliderValueDisplay) {
                   sliderValueDisplay.textContent = e.target.value;
                 }
-                handleFunction(oldkey, e.target.value);
+                handleFunction(oldkey, e.target.value.trim());
               }}
             />
             <span className={`slider-value-display-${key}-${hasHandleFunc}`}>
-              50
+              -
             </span>
           </div>
         );
@@ -804,15 +809,6 @@ const Home = () => {
             setAttrs={setAggrKeys}
           />
         </div>
-        <div className="inline-flex space-x-4">
-          Show Columns:
-          <Form.Check
-            type="checkbox"
-            label="Distinct"
-            checked={distinct}
-            onChange={(e) => setDistinct(e.target.checked)}
-          />
-        </div>
       </>
     ),
   };
@@ -900,7 +896,7 @@ const Home = () => {
         )} FROM ${currTable}, ${joinSelection} ${where_clause}`;
 
         if (whereHavingStr !== "") {
-          executeQuery += `WHERE ${whereHavingStr}`;
+          executeQuery += `WHERE ${sanitizeInputs(whereHavingStr)}`;
         }
 
         break;
@@ -911,7 +907,6 @@ const Home = () => {
             ? `WHERE ${sanitizeInputs(defaultQuery)}`
             : ""
           : "";
-        let distinctOn2 = distinct ? "DISTINCT" : "";
         // SELECT ${distinctOn2} CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, SKILLNAME, LOCATIONNAME, INVENTORYSIZE FROM CHARACTERINFO
         //   NATURAL JOIN PLAYER
         //   NATURAL JOIN DEVELOPS
@@ -919,20 +914,17 @@ const Home = () => {
         //   NATURAL JOIN INVENTORY
         //   NATURAL JOIN CONTAINS
         executeQuery = `
-        SELECT ${distinctOn2} CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, SKILLNAME, LOCATIONNAME, INVENTORYSIZE FROM CHARACTERINFO
-          NATURAL JOIN PLAYER
-          NATURAL JOIN DEVELOPS
-          NATURAL JOIN COORDINATELOCATIONS
-          NATURAL JOIN INVENTORY
-          NATURAL JOIN CONTAINS 
-        `;
-
+        SELECT DISTINCT CHARACTERNAME, HEALTH, OVERALLLEVEL, MANA, LOCATIONNAME, SKILLNAME FROM CHARACTERINFO
+          LEFT JOIN PLAYER ON PLAYER.CHARACTERID = CHARACTERINFO.CHARACTERID
+          LEFT JOIN COORDINATELOCATIONS ON COORDINATELOCATIONS.COORDINATES = CHARACTERINFO.COORDINATES
+          LEFT JOIN DEVELOPS ON CHARACTERINFO.CHARACTERID = DEVELOPS.CHARACTERID
+        `
         // JOIN COORDINATELOCATIONS ON CHARACTERINFO.common_column = COORDINATELOCATIONS.common_column
         //     JOIN INVENTORY ON CHARACTERINFO.common_column = INVENTORY.common_column
         //     JOIN CONTAINS ON CHARACTERINFO.common_column = CONTAINS.common_column
         //     LEFT JOIN DEVELOPS ON CHARACTERINFO.CHARACTERID = DEVELOPS.CHARACTERID;
         if (whereHavingStr !== "") {
-          executeQuery += `WHERE ${whereHavingStr}`;
+          executeQuery += `WHERE ${sanitizeInputs(whereHavingStr)}`;
         }
         break;
 
@@ -953,10 +945,10 @@ const Home = () => {
           console.log(aggrKeys);
           if (groupBy[1] == undefined) {
             executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}) FROM ${currTable} `;
-            executeQuery += `WHERE ${whereHavingStr}`;
+            executeQuery += `WHERE ${sanitizeInputs(whereHavingStr)}`;
           } else {
             executeQuery = `SELECT ${groupByOperation}(${groupBy[0]}), ${groupBy[1]} FROM ${currTable} GROUP BY ${groupBy[1]} `;
-            executeQuery += `HAVING ${whereHavingStr}`;
+            executeQuery += `HAVING ${sanitizeInputs(whereHavingStr)}`;
           }
 
         }
