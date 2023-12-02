@@ -130,6 +130,7 @@ const Home = () => {
 
   /* Sanitize inputs to prevent malicious inputs to the database */
   const sanitizeInputs = (str: string) => {
+
     const patterns = [
       /--/,
       /;/,
@@ -413,7 +414,7 @@ const Home = () => {
             key={index}
             type="text"
             placeholder={key}
-            onChange={(e) => handleFunction(oldkey, e.target.value)}
+            onChange={(e) => handleFunction(oldkey, e.target.value.replaceAll("'", "''"))}
           />
         );
       }
