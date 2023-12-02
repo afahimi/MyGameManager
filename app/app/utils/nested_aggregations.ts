@@ -33,11 +33,12 @@ export const nestedAggregation: NestedAggregation = {
                                                          FROM CharacterInfo C2, Player P1 
                                                          WHERE P1.CharacterID = C2.CharacterID)`,
 
-    "Count of Players with Health Greater than Average Player Health": `SELECT COUNT(P.CharacterID) AS Count
+    "Count of Players with Health Greater than Average Player Health For each Level": `SELECT COUNT(P.CharacterID) AS Count, OVERALLLEVEL
     FROM Player P, CharacterInfo C 
     WHERE P.CharacterID = C.CharacterID AND C.Health > (SELECT AVG(Health) 
                                                         FROM CharacterInfo C2, Player P1 
-                                                        WHERE P1.CharacterID = C2.CharacterID)`,
+                                                        WHERE P1.CharacterID = C2.CharacterID)
+    GROUP BY OVERALLLEVEL`,
 
   "All Players with Level Greater than Average Player Level": `SELECT DISTINCT P.CharacterID, OverallLevel, CharacterName
      FROM Player P, CharacterInfo C 
