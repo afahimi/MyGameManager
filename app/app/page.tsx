@@ -100,16 +100,12 @@ const Home = () => {
     "Game Summary": "SUMMARY",
   };
 
-  
+  /* Some tables hidden from the user */
   const HIDDEN_TABLES = new Set([
-    // "NONPLAYABLECHARACTER",
     "QUESTREWARDS",
     "REWARDITEMS",
     "YIELDSQUEST",
-    "INVENTORY",
-    // "FACTIONS",
-    // "MEMBEROF",
-    // "INTERACTIONS",
+    "INVENTORY"
   ]);
 
   /* Tables name that will be shopn on the front end */
@@ -254,7 +250,7 @@ const Home = () => {
     }, 3500);
   };
 
-
+/* This is to track selected check boxes for selected columns that will be displayed */
   const handleProjectCheckboxChange = (checked: boolean, key: string) => {
     if (checked) {
       console.log("checked");
@@ -269,6 +265,7 @@ const Home = () => {
     setCurrTableKeys(Object.keys(result[0]));
   };
 
+  /* Updates the state of selected check boxes */
   const generateProjectElements = (
     res: string[] = result,
     tableName: string = currTable
@@ -298,6 +295,7 @@ const Home = () => {
     });
   };
 
+  /* Find the column names of the current table */
   const getTableAttributes = () => {
     if (result.length == 0) {
       return [];
@@ -306,6 +304,7 @@ const Home = () => {
     return uniqueKeys;
   };
 
+  /* To handle typed inputs */
   const handleInputChange = (fieldName: string, value: string) => {
     value.replace("\'", "\"")
     setQuery((prevQuery) => ({
@@ -313,7 +312,7 @@ const Home = () => {
       [fieldName]: value,
     }));
   };
-
+  /* To fetch data that the original tuple will be updated to */
   const handleUpdateChange = (fieldName: string, value: string) => {
     setUpdateValues((prevQuery) => ({
       ...prevQuery,
@@ -321,6 +320,7 @@ const Home = () => {
     }));
   };
 
+  /* This functions is to show the current table that is selected */
   async function changeVisibleTable(table_name: string) {
     setResult([]);
     setCurrTable(table_name);
@@ -337,6 +337,7 @@ const Home = () => {
     }
   }
 
+  /* Function for initializing UI when the page is first rendered */
   useEffect(() => {
     getAllTableNames()
       .then((res: any) => {
@@ -349,6 +350,7 @@ const Home = () => {
       });
   }, []);
 
+  /* Function for rendering the appropriate input divisions on UI */
   const createFormControlElements = (handleFunction = handleInputChange) => {
     if (result.length === 0) {
       return null;
@@ -418,6 +420,7 @@ const Home = () => {
     });
   };
 
+  /* This gives the selection of tables to join with the current table */
   const generateJoinElements = () => {
     if (tableNames.length === 0) {
       return null;
@@ -439,31 +442,7 @@ const Home = () => {
     });
   };
 
-  const generateJoinUserElements = () => {
-    if (tableNames.length === 0) {
-      return null;
-    }
-
-    const joinTables = {
-      "Character Info and Inventory": "CHARACTERINFO",
-    };
-
-    return tableNames.map((tableName: any, count) => {
-      return (
-        <Dropdown.Item
-          key={count}
-          onClick={() => {
-            setJoinSelection(tableName.TABLE_NAME);
-            getJoinSelectTable(tableName.TABLE_NAME);
-            setDivisorColumn("");
-          }}
-        >
-          {tableName.TABLE_NAME}
-        </Dropdown.Item>
-      );
-    });
-  };
-
+  /* To execute division query */
   const generateDivisionMenuElements = () => {
     let divisonQueries: any[] = ["Select all players who have all items"];
     let nestedAggQueries = Object.keys(nestedAggregation);
@@ -483,6 +462,7 @@ const Home = () => {
     });
   };
 
+  /* Renders the table on UI for the table to be joined with the current table */
   const getJoinSelectTable = async (tableName: string) => {
     setJoinTableResult(await OracleServerRequest(`SELECT * FROM ${tableName}`));
   };
@@ -494,7 +474,8 @@ const Home = () => {
   }
 
 
-  /* This function is in charge of the rendering of the website, 
+  /* 
+   * This function is in charge of the rendering of the website, 
    * depending on the current operation it generates tsx to render
    * on the UI.
    */
@@ -732,7 +713,8 @@ const Home = () => {
     ),
   };
 
-  /* Depending on the operation this fuction generates the queries by collecting 
+ /* 
+  * Depending on the operation this fuction generates the queries by collecting 
   *  the inputs and sending it to the backend
   */
   const handleExecuteQuery = async (op: string = operation) => {
